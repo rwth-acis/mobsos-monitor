@@ -1,4 +1,4 @@
-<project name="las2peer-web-connector" default="jar" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
+<project name="mobsos-monitor" default="jar" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
 	
 	<property name="ivy.organisation" value="i5" />
 	<property name="ivy.module" value="mobsos-monitor" />

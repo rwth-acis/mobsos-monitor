@@ -1,7 +1,6 @@
 cd %~dp0
 cd ..
 set BASE=%CD%
-set CLASSPATH="%BASE%/lib/*"
+set CLASSPATH="%BASE%/lib/*;%BASE%/export/jars/*;"
 
-java -cp %CLASSPATH% acis.dbis.rwth.mobsos.monitor.Monitor
-pause
+tail -f example.log | java -cp %CLASSPATH% acis.dbis.rwth.mobsos.monitor.Monitor
