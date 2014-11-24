@@ -5,15 +5,27 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+import org.slf4j.*;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
+
+import acis.dbis.rwth.mobsos.monitor.notify.NotificationManager;
 
 public class Monitor {
 
 	private InputStream in;
+	
+	public final static Logger log = LoggerFactory.getLogger(Monitor.class );
 
 	public Monitor(InputStream in) {
 		this.in = in;
+		
+		try {
+			
+			//NotificationManager.initInstance(mailHost, mailPort, mailUsername, mailPassword, mailAuth, mailTLSEnable, mailFrom, mailTo);
+		} catch (Exception e1) {
+			Monitor.log.warn("Could not start MobSOS Notification Manager!", e1);
+		}
 	}
 
 	public void listen() throws IOException{
