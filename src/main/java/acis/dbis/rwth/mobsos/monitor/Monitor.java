@@ -38,8 +38,8 @@ public class Monitor {
 		// read configuration
 		readConf();
 		
-		// initialize notification manager
-		try {
+		// initialize notification manager (for some reasons takes over a minute to init...)
+		 try {
 			
 			NotificationManager.initInstance(
 					conf.getProperty("mailHost"),
@@ -50,7 +50,7 @@ public class Monitor {
 					conf.getProperty("mailTLSEnable"), 
 					conf.getProperty("mailFrom"), 
 					conf.getProperty("mailTo"));
-			
+		
 		} catch (Exception e1) {
 			Monitor.log.warn("couldn't start mail notification manager!", e1);
 		}
