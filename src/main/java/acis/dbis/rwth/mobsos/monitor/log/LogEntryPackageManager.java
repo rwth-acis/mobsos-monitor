@@ -58,18 +58,15 @@ public class LogEntryPackageManager {
 	private Collection<LogEntryPackageWorker> workerPool;
 
 	public LogEntryPackageManager(String jdbcDriverClassName, 
-			String jdbcProtocolPrefix, 
-			String logDbHostname, 
-			int logDbPort,
-			String logDbDatabaseName,
-			String logDbLogin, String logDbPass,
+			String jdbcUrl,
+			String jdbcLogin, String jdbcPass,
 			int numWorkers, int keepAlive) throws ClassNotFoundException, SQLException{
 
 		this.databaseDriverClassName = jdbcDriverClassName;
-		this.databaseUrl = jdbcProtocolPrefix + "//" + logDbHostname + ":" + logDbPort + "/" + logDbDatabaseName +
-				":retrieveMessagesFromServerOnGetMessage=true;";
-		this.databaseLogin = logDbLogin;
-		this.databasePass = logDbPass;
+		this.databaseUrl = jdbcUrl;
+		
+		this.databaseLogin = jdbcLogin;
+		this.databasePass = jdbcPass;
 		this.dbWorkers = numWorkers;
 		this.dbKeepAlivePingInterval = keepAlive;
 
@@ -151,7 +148,7 @@ public class LogEntryPackageManager {
 			interruptWorkers();
 			this.workerPool.clear();
 		}
-		// then start requested number of workerPool and add them to the worker collection handled by this class
+		// then start requested number of workers in pool and add them to the worker collection handled by this class
 		for (int i = 0; i < this.dbWorkers; i++) {
 			LogEntryPackageWorker w = new LogEntryPackageWorker(this);
 			w.start();
@@ -189,14 +186,12 @@ public class LogEntryPackageManager {
 	}
 
 	/**
-	 * Creates a new log entry package and adds it to the table of partial log entry packages. This method should be used by external
+	 * adds a new log entry package to the table of partial log entry packages. This method should be used by external
 	 * entities to create new log entry packages, which upon completion of parameter settings can be queued for persistence in the 
 	 * log database. 
 	 */
-	public LogEntryPackage createLogEntryPackage(){
-		LogEntryPackage p = new LogEntryPackage();
+	public void addLogEntryPackage(LogEntryPackage p){
 		partialLogEntryPackages.put(p.getId(),p);
-		return partialLogEntryPackages.get(p.getId());
 	}
 
 
@@ -238,17 +233,10 @@ public class LogEntryPackageManager {
 	}
 
 	public static void initInstance(String jdbcDriverClassName, 
-			String jdbcProtocolPrefix, 
-			String logDbHostname, 
-			int logDbPort,
-			String logDbDatabaseName,
+			String jdbcUrl,
 			String logDbLogin, String logDbPass,
 			int numWorkers, int keepAlive) throws ClassNotFoundException, SQLException{
-		instance = new LogEntryPackageManager(jdbcDriverClassName, 
-				jdbcProtocolPrefix, 
-				logDbHostname, 
-				logDbPort,
-				logDbDatabaseName,
+		instance = new LogEntryPackageManager(jdbcDriverClassName, jdbcUrl,
 				logDbLogin, logDbPass,
 				numWorkers, keepAlive);
 	}

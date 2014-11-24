@@ -44,7 +44,7 @@ public class DatabaseWatcher extends Thread {
 	}
 
 	protected void renewKeepAliveStatement() throws SQLException{
-		this.keepAliveStatement = this.manager.getConnection().prepareStatement("select count(*) from mobsos.questionnaire");
+		this.keepAliveStatement = this.manager.getConnection().prepareStatement("select 1");
 	}
 
 	public void renewConnection() throws SQLException{
