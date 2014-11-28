@@ -3,6 +3,6 @@
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd ${SCRIPTDIR}/../
 BASE=${PWD}
-export CLASSPATH="${PWD}/lib/*"
+export CLASSPATH="${BASE}/lib/*:${BASE}/export/jars/*"
 
-java -cp "${CLASSPATH}" i5.las2peer.tools.L2pNodeLauncher -s 9001 - "uploadStartupDirectory" "startService('i5.las2peer.services.mobsos.SurveyService','mobsosrules')" "startConnector('i5.las2peer.webConnector.WebConnector')" 
+tail -f $1 | java -cp ${CLASSPATH} -Dorg.slf4j.simpleLogger.defaultLogLevel=debug acis.dbis.rwth.mobsos.monitor.Monitor
