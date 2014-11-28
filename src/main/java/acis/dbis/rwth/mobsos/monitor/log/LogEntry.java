@@ -1,5 +1,7 @@
 package acis.dbis.rwth.mobsos.monitor.log;
 
+import java.sql.SQLException;
+
 /**
  * This abstract class defines the principal functionality of different log entry types. For any logging information managed by an instance,
  * it must be clear if data is complete (cf. {@link LogEntry#isComplete()} and how it should be written to the MobSOS monitoring database, 
@@ -52,6 +54,6 @@ public abstract class LogEntry {
 
 	public abstract boolean isComplete();
 	
-	public abstract boolean write();
+	public abstract boolean write() throws SQLException;
 	
 }

@@ -44,7 +44,7 @@ public class DatabaseWatcher extends Thread {
 	}
 
 	protected void renewKeepAliveStatement() throws SQLException{
-		this.keepAliveStatement = this.manager.getConnection().prepareStatement("select 1");
+		this.keepAliveStatement = this.manager.getConnection().prepareStatement(Monitor.conf.getProperty("jdbcKeepAliveStatement"));
 	}
 
 	public void renewConnection() throws SQLException{

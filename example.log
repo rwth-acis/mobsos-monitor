@@ -1,8 +1,0 @@
-"127.0.0.1","-","2014-11-22T19:22:53+01:00","GET","/mobsos-surveys/questionnaires",200,"-","-","Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0",0.113,351,5625,-
-"127.0.0.1","-","2014-11-22T19:25:18+01:00","GET","/mobsos-surveys/questionnaires",200,"-","-","Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0",0.113,351,5625,-,"-","text/html"
-"127.0.0.1","-","2014-11-22T19:26:00+01:00","GET","/mobsos-surveys",200,"-","-","Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0",0.075,310,2872,-,"-","text/html"
-"127.0.0.1","-","2014-11-22T19:26:29+01:00","GET","/mobsos-surveys/questionnaires",200,"-","-","Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0",0.120,325,5625,-,"-","text/html"
-"127.0.0.1","-","2014-11-22T19:27:15+01:00","GET","/mobsos-surveys/surveys",200,"-","-","Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0",0.119,318,5457,-,"-","text/html"
-"127.0.0.1","-","2014-11-22T19:27:15+01:00","GET","/mobsos-surveys/surveys",200,"-","-","Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0",0.120,318,5457,-,"-","text/html"
-"127.0.0.1","-","2014-11-22T19:29:35+01:00","GET","/mobsos-surveys/surveys",200,"-","-","Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0",0.111,344,5457,-,"-","text/html","-"
-"127.0.0.1","-","2014-11-22T19:29:45+01:00","GET","/mobsos-surveys/surveys",200,"-","-","Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0",0.119,344,5457,-,"-","text/html","-"

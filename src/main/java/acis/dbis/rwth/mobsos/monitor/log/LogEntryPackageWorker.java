@@ -28,52 +28,14 @@ import acis.dbis.rwth.mobsos.monitor.notify.NotificationManager;
 public class LogEntryPackageWorker extends Thread {
 
 	private final LogEntryPackageManager manager;
-	private Hashtable<String,PreparedStatement> preparedStatementTable;
 	private static int instance = 0;
 
 
 	public LogEntryPackageWorker(LogEntryPackageManager m) throws SQLException {
 		this.setName("LEPW-"+(instance++));
 		this.manager = m;
-		
-		// initialize hash table for prepared statements
-		this.preparedStatementTable = new Hashtable<String,PreparedStatement>();
 				
 		Monitor.log.info("Log Entry Package Worker " + getName() + " ready...");
-	}
-
-	/**
-	 * Initializes all prepared statements for writing different kinds of log entries to the log database.
-	 * These prepared statements are then used by {@link LogDatabaseWriteWorker} instances to write 
-	 * respective log entries to the right log database tables.
-	 * 
-	 * @throws SQLException 
-	 */
-	private void setPreparedStatements(Hashtable<String,PreparedStatement> pss){
-		this.preparedStatementTable = pss;
-		
-		/*
-		// prepared statement for central request log entries, generating new identifiers.
-		// these statements should be executed as queries to get hands on the generated identifier.
-		// Furthermore, they should be executed after the respective session log entry was created.
-		String request_sql = "SELECT ID FROM NEW TABLE(INSERT INTO MOBSOS.REQUEST(REMOTE_ADDR,SID,REQ_TYPE,STIME,ETIME,REQ_SIZE,RES_SIZE, RES_STATUS) VALUES (?,?,?,?,?,?,?,?))";
-		PreparedStatement request_ps = manager.getConnection().prepareStatement(request_sql);
-		preparedStatementTable.put(LogEntry.REQUEST_TYPE, request_ps);
-		
-		// prepared statement for header log entries. The request id should be the one generated
-		// from inserting the respective corresponding request log entry before.
-		String headers_sql = "INSERT INTO MOBSOS.HEADERS(REQID,HEADERS) VALUES (?,?)";
-		PreparedStatement headers_ps = manager.getConnection().prepareStatement(headers_sql);
-		preparedStatementTable.put(LogEntry.HEADERS_TYPE, headers_ps);
-		*/
-		
-	}
-
-	public PreparedStatement getPreparedStatement(Integer type){
-		if(preparedStatementTable == null || !preparedStatementTable.keySet().contains(type)){
-			throw new IllegalArgumentException("No prepared statement available for type " + type);
-		}
-		return this.preparedStatementTable.get(type);
 	}
 
 	@Override
@@ -98,7 +60,7 @@ public class LogEntryPackageWorker extends Thread {
 					// have log entry package written by worker
 					if(l != null){
 						l.setWorker(this);
-						writeLogEntryPackage(l);
+						l.write();
 					}
 				}
 			}
@@ -109,7 +71,10 @@ public class LogEntryPackageWorker extends Thread {
 			Thread.currentThread().interrupt();
 		}
 	}
-
+	
+	public Connection getConnection(){
+		return this.manager.getConnection();
+	}
 
 	private void writeLogEntryPackage(LogEntryPackage l){
 		try{

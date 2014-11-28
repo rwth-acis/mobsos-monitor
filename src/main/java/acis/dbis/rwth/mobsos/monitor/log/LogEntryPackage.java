@@ -1,5 +1,6 @@
  package acis.dbis.rwth.mobsos.monitor.log;
 
+import java.sql.SQLException;
 import java.util.UUID;
 
 /**
@@ -32,6 +33,7 @@ import java.util.UUID;
 public abstract class LogEntryPackage {
 
 	private UUID id;
+
 	private LogEntryPackageWorker worker;
 
 	public LogEntryPackage(){
@@ -50,6 +52,6 @@ public abstract class LogEntryPackage {
 		this.worker = worker;
 	}
 
-	public abstract void write();
+	public abstract void write() throws SQLException;
 
 }
