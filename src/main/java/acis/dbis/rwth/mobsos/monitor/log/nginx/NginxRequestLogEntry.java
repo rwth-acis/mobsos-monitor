@@ -69,7 +69,6 @@ public class NginxRequestLogEntry extends LogEntry {
 
 				if (rs.next()) {
 					Long nid = rs.getLong(1);
-					Monitor.log.debug("New Request ID: " + nid);
 					this.setId(nid);
 					return true;
 				} else {
