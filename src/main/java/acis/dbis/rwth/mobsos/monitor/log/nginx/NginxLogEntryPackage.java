@@ -3,11 +3,14 @@ package acis.dbis.rwth.mobsos.monitor.log.nginx;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
@@ -15,7 +18,11 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpMethodParams;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
+import org.json.simple.parser.ParseException;
 
 import acis.dbis.rwth.mobsos.monitor.Monitor;
 import acis.dbis.rwth.mobsos.monitor.log.LogEntryPackage;
@@ -59,6 +66,25 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		request.setRequestLength(record.get(12));
 		request.setResponseLength(record.get(13));
 		request.setRequestTime(record.get(14));
+		request.setClientId(record.get(15));
+		
+		// extract OIDC access token from request, if available.
+		// depending on which auth flow is used, the token is transmitted 
+		// in a query parameter or in a HTTP Authorization header. Precedence
+		// is given to the auth header option.
+		
+		String tokenQuery = record.get(16);
+		String tokenHeader = record.get(17);
+		String token = null;
+		
+		
+		if(!tokenHeader.equals("-") && tokenHeader.startsWith("Bearer ")){
+			token = tokenHeader.replaceAll("Bearer ", "");
+		} else if(!tokenQuery.equals("-")){
+			token = tokenQuery;
+		}
+		
+		request.setToken(token);
 
 		/*
 		Monitor.log.info("Request Time: " + request.getTime());
@@ -78,12 +104,24 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		Monitor.log.info("Request Processing Time: " + request.getRequestTime());
 		*/
 		
+		Monitor.log.info("OpenID Connect Client ID: " + request.getClientId());
+		Monitor.log.info("OpenID Connect Token: " + request.getToken());
+		
+		
+		
 		// parse query parameters and put into hashtable
 		// TODO:
 		manageIpGeo();
-		
+		if(request.getToken() != null){
+			retrieveUserInfo(request.getToken());
+		}
 		// parse header parameters and put into hashtable
 		// TODO:
+	}
+	
+	private void manageOidc(){
+		String uiep = (String) Monitor.oidcProviderConfig.get("userinfo_endpoint");
+		Monitor.log.debug("OIDC User Info Endpoint: " + uiep);
 	}
 	
 	private void manageIpGeo(){
@@ -131,6 +169,56 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 			Monitor.log.warn("Could not retrieve/store IP geo data!",e);
 		} catch (IOException e) {
 			Monitor.log.warn("Could not retrieve/store IP geo data!",e);
+		}
+	}
+	
+	
+
+		
+	/**
+	 * Given an access token, retrieves Open ID Connect user information.
+	 * @throws ParseException 
+	 */
+	private void retrieveUserInfo(String token){
+		
+		// send Open ID Provider Config request
+		// (cf. http://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig)
+		String url = (String) Monitor.oidcProviderConfig.get("userinfo_endpoint");
+		
+		Monitor.log.debug("User Info Endpoint: " + url);
+		
+		// at this point we use a regular HttpURLConnection instead of the Apache Commons HTTP Client.
+		// The Apache client showed unexpected behavior, when confronted with a bearer token in an Authorization header.
+		// The respective request sent caused errors on server side attributed to invalid syntax.
+		try{
+		URL obj = new URL(url);
+		HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+ 
+		// optional default is GET
+		con.setRequestMethod("GET");
+ 
+		//add request header
+		con.setRequestProperty("Authorization", "Bearer " + token);
+ 
+		int responseCode = con.getResponseCode();
+ 
+		BufferedReader in = new BufferedReader(
+		        new InputStreamReader(con.getInputStream()));
+		String inputLine;
+		StringBuffer response = new StringBuffer();
+ 
+		while ((inputLine = in.readLine()) != null) {
+			response.append(inputLine);
+		}
+		in.close();
+		
+		Monitor.log.debug(response.toString());
+		// TODO: set request sub and make sure it's written to database.
+		// TODO: check api/client/{id} to retrieve additional info on client.
+		// TODO: set name to DatabaseWatcher thread.
+		
+		}catch(Exception e){
+			Monitor.log.debug("Erroe",e);
 		}
 	}
 
@@ -189,6 +277,7 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		// first parse raw CSV data into ready-to-use POJOs (request, query, headers)
 		parseData();
 
+		/*
 		if(this.request.isComplete()){
 
 			// get database connection via worker assigned to write this log entry package
@@ -215,6 +304,6 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 
 		} else {
 			Monitor.log.warn("No attempt to write log entry package " + this.getId() + " due to incomplete request log entry.");
-		}
+		}*/
 	}
 }

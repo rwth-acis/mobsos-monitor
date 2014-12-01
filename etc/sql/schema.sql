@@ -22,6 +22,8 @@ create table log (
 	request_length int not null,
 	response_length int not null,
 	request_time float not null,
+	client_id varchar(128),
+	uid varchar(128),
     constraint log_pk primary key(id)
 );
 

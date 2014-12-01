@@ -18,7 +18,7 @@ import acis.dbis.rwth.mobsos.monitor.log.LogEntryPackage;
 
 public class NginxRequestLogEntry extends LogEntry {
 
-	private String time, ip, scheme, host, method, uri, status, referer, userAgent, accept, receivedContent, sentContent, requestLength, responseLength, requestTime;
+	private String time, ip, scheme, host, method, uri, status, referer, userAgent, accept, receivedContent, sentContent, requestLength, responseLength, requestTime, clientId, token, uid;
 
 	public NginxRequestLogEntry(LogEntryPackage container) {
 		super(container);
@@ -292,6 +292,48 @@ public class NginxRequestLogEntry extends LogEntry {
 	 */
 	public void setRequestTime(String requestTime) {
 		this.requestTime = requestTime;
+	}
+
+	/**
+	 * @return the clientId
+	 */
+	public String getClientId() {
+		return clientId;
+	}
+
+	/**
+	 * @param clientId the clientId to set
+	 */
+	public void setClientId(String clientId) {
+		this.clientId = clientId;
+	}
+
+	/**
+	 * @return the token
+	 */
+	public String getToken() {
+		return token;
+	}
+
+	/**
+	 * @param token the token to set
+	 */
+	public void setToken(String token) {
+		this.token = token;
+	}
+
+	/**
+	 * @return the uid
+	 */
+	public String getUid() {
+		return uid;
+	}
+
+	/**
+	 * @param uid the uid to set
+	 */
+	public void setUid(String uid) {
+		this.uid = uid;
 	}
 
 }
