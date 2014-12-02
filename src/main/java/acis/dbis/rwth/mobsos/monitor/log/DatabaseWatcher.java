@@ -32,6 +32,7 @@ public class DatabaseWatcher extends Thread {
 
 	public DatabaseWatcher (LogEntryPackageManager m, int pingSeconds) throws IllegalArgumentException, SQLException{
 		this.manager = m;
+		this.setName("DBWatcher");
 		if(this.manager.getConnection().isClosed()){
 			throw new IllegalArgumentException("Passed database connection must be alive!");
 		}

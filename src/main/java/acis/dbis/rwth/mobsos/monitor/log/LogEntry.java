@@ -1,5 +1,6 @@
 package acis.dbis.rwth.mobsos.monitor.log;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 
 /**
@@ -54,6 +55,6 @@ public abstract class LogEntry {
 
 	public abstract boolean isComplete();
 	
-	public abstract boolean write() throws SQLException;
+	public abstract boolean write(Connection c) throws SQLException;
 	
 }

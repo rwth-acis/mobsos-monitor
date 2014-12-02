@@ -9,16 +9,13 @@ import java.sql.Timestamp;
 
 import javax.xml.bind.DatatypeConverter;
 
-import org.apache.commons.csv.CSVRecord;
-
-import sun.security.action.GetLongAction;
 import acis.dbis.rwth.mobsos.monitor.Monitor;
 import acis.dbis.rwth.mobsos.monitor.log.LogEntry;
 import acis.dbis.rwth.mobsos.monitor.log.LogEntryPackage;
 
 public class NginxRequestLogEntry extends LogEntry {
 
-	private String time, ip, scheme, host, method, uri, status, referer, userAgent, accept, receivedContent, sentContent, requestLength, responseLength, requestTime, clientId, token, uid;
+	private String time, ip, scheme, host, method, uri, status, referer, userAgent, accept, receivedContent, sentContent, requestLength, responseLength, requestTime, clientId, userId;
 
 	public NginxRequestLogEntry(LogEntryPackage container) {
 		super(container);
@@ -26,46 +23,51 @@ public class NginxRequestLogEntry extends LogEntry {
 
 	@Override
 	public boolean isComplete() {
+		if(userId != null && clientId != null){
+			Monitor.log.debug("Authorized request -> Log!");
+		}
 		return true;
 	}
 
 	@Override
-	public boolean write() {
+	public boolean write(Connection c) {
 		if(isComplete()){
 
+			PreparedStatement stmt = null;
+			ResultSet rs = null;
 			try{
-				// get corresponding prepared statement, then clear and set parameters
-				Connection c = this.getContainer().getWorker().getConnection();
 
 				//time, ip, scheme, host, method, uri, status, referer, userAgent, accept, content_type, requestLength, responseLength, requestTime;
-				PreparedStatement stmt = c.prepareStatement("insert into mobsos_logs.log(time,ip,scheme,host,method,uri,status,referer,useragent,accept,received_content,sent_content,request_length,response_length,request_time) "
-						+ "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
-				
+				stmt = c.prepareStatement("insert into mobsos_logs.log(time,ip,user_id, client_id,scheme,host,method,uri,status,referer,useragent,accept,received_content,sent_content,request_length,response_length,request_time) "
+						+ "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+
 				if(uri.endsWith("/")){
 					uri = uri.substring(0,uri.length()-1);
 				}
-				
+
 				stmt.clearParameters();
 				stmt.setTimestamp(1, new Timestamp(DatatypeConverter.parseDateTime(time).getTimeInMillis()));
 				stmt.setString(2,ip);
-				stmt.setString(3,scheme);
-				stmt.setString(4,host);
-				stmt.setString(5,method);
-				stmt.setString(6,uri);
-				stmt.setInt(7,Integer.parseInt(status));
-				stmt.setString(8, referer);
-				stmt.setString(9, userAgent);
-				stmt.setString(10, accept);
-				stmt.setString(11, receivedContent);
-				stmt.setString(12, sentContent);
-				
-				stmt.setInt(13,Integer.parseInt(requestLength));
-				stmt.setInt(14,Integer.parseInt(responseLength));
-				stmt.setFloat(15,Float.parseFloat(requestTime));
-				
+				stmt.setString(3, userId);
+				stmt.setString(4, clientId);
+				stmt.setString(5,scheme);
+				stmt.setString(6,host);
+				stmt.setString(7,method);
+				stmt.setString(8,uri);
+				stmt.setInt(9,Integer.parseInt(status));
+				stmt.setString(10, referer);
+				stmt.setString(11, userAgent);
+				stmt.setString(12, accept);
+				stmt.setString(13, receivedContent);
+				stmt.setString(14, sentContent);
+
+				stmt.setInt(15,Integer.parseInt(requestLength));
+				stmt.setInt(16,Integer.parseInt(responseLength));
+				stmt.setFloat(17,Float.parseFloat(requestTime));
+
 				stmt.executeUpdate();
-				
-				ResultSet rs = stmt.getGeneratedKeys();
+
+				rs = stmt.getGeneratedKeys();
 
 				if (rs.next()) {
 					Long nid = rs.getLong(1);
@@ -73,10 +75,14 @@ public class NginxRequestLogEntry extends LogEntry {
 					return true;
 				} else {
 					return false;
-				}
+				} 
 			} catch (SQLException e){
-				e.printStackTrace();
+				Monitor.log.debug("Could not write request log entry!",e);
+				Monitor.log.debug("Referer: " + referer);
 				return false;
+			} finally {
+				try { if (rs != null) rs.close(); } catch(Exception e) {Monitor.log.warn("Could not close result set!",e);}
+				try { if (stmt != null) stmt.close(); } catch(Exception e) {Monitor.log.warn("Could not close result set!",e);}
 			}
 
 		} else {
@@ -309,31 +315,17 @@ public class NginxRequestLogEntry extends LogEntry {
 	}
 
 	/**
-	 * @return the token
+	 * @return the userId
 	 */
-	public String getToken() {
-		return token;
+	public String getUserId() {
+		return userId;
 	}
 
 	/**
-	 * @param token the token to set
+	 * @param userId the userId to set
 	 */
-	public void setToken(String token) {
-		this.token = token;
-	}
-
-	/**
-	 * @return the uid
-	 */
-	public String getUid() {
-		return uid;
-	}
-
-	/**
-	 * @param uid the uid to set
-	 */
-	public void setUid(String uid) {
-		this.uid = uid;
+	public void setUserId(String userId) {
+		this.userId = userId;
 	}
 
 }

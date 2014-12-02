@@ -3,16 +3,16 @@ package acis.dbis.rwth.mobsos.monitor.log.nginx;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.Iterator;
+import java.util.Hashtable;
 
+import acis.dbis.rwth.mobsos.monitor.Monitor;
 import acis.dbis.rwth.mobsos.monitor.log.LogEntry;
 import acis.dbis.rwth.mobsos.monitor.log.LogEntryPackage;
 
 public class NginxRequestHeadersLogEntry extends LogEntry {
 
 
-	private String headers;
+	private Hashtable<String,String> headers;
 	
 	public NginxRequestHeadersLogEntry(LogEntryPackage container) {
 		super(container);
@@ -20,36 +20,29 @@ public class NginxRequestHeadersLogEntry extends LogEntry {
 
 	@Override
 	public boolean isComplete() {
-		return false;
+		// consider log entry as complete, if id is set from parent request log entry and if headers table is not empty.
+		if(getId()!=null && getHeaders() !=null && getHeaders().size()>0){
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	@Override
-	public boolean write() throws SQLException {
+	public boolean write(Connection c) throws SQLException {
 		if(isComplete()){
 
+			PreparedStatement stmt = c.prepareStatement("insert into mobsos_logs.log_header(id,name,value) values (?,?,?)");
 
-			// get corresponding prepared statement, then clear and set parameters
-			/*
-			Connection c = this.getContainer().getWorker().getConnection();
-			PreparedStatement stmt = c.prepareStatement("insert into mobsos_log.log_header(id,key,val) values (?,?,?)");
-
-			Iterator<String> it = answerFieldTable.keySet().iterator();
-			while(it.hasNext()){
-
-				String qkey = it.next();
-				String qval = ""+answerFieldTable.get(qkey);
-
-				stmt.setString(1,sub);
-				stmt.setInt(2,surveyId);
-				stmt.setString(3, qkey);
-				stmt.setString(4, qval);
-				stmt.setTimestamp(5, new Timestamp(now.getTime()));
+			for(String key: getHeaders().keySet()){
+				stmt.clearParameters();
+				stmt.setLong(1,getId());
+				stmt.setString(2,key);
+				stmt.setString(3, getHeaders().get(key));
 				stmt.addBatch();
-
 			}
-
+			
 			stmt.executeBatch();
-			*/
 			
 			return true;
 		} else {
@@ -61,14 +54,14 @@ public class NginxRequestHeadersLogEntry extends LogEntry {
 	/**
 	 * @return the headers
 	 */
-	public String getHeaders() {
+	public Hashtable<String,String> getHeaders() {
 		return headers;
 	}
 
 	/**
 	 * @param headers the headers to set
 	 */
-	public void setHeaders(String headers) {
+	public void setHeaders(Hashtable<String,String> headers) {
 		this.headers = headers;
 	}
 

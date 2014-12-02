@@ -60,7 +60,7 @@ public class LogEntryPackageWorker extends Thread {
 					// have log entry package written by worker
 					if(l != null){
 						l.setWorker(this);
-						l.write();
+						writeLogEntryPackage(l);
 					}
 				}
 			}
@@ -87,7 +87,7 @@ public class LogEntryPackageWorker extends Thread {
 			boolean rbComplete = false;
 			try {
 				if(this.manager.getConnection() != null && !this.manager.getConnection().isClosed()){
-					Monitor.log.error("Transaction for log entry package " + this.getId() + " rolled back!",e);
+					Monitor.log.error("Transaction for log entry package " + l.getId() + " rolled back!",e);
 					this.manager.getConnection().rollback();
 					rbComplete = true;
 				}
@@ -98,15 +98,15 @@ public class LogEntryPackageWorker extends Thread {
 			// send notification about failed writing of log entry package
 			String message = "Worker " + this.getName() + " failed to write package " + l.getId() + "."; 
 			if(rbComplete){
-				message += "(transaction rolled back)";
+				message += " (transaction rolled back)";
 			} else {
-				message += "(transaction rollback failed!)";
+				message += " (transaction rollback failed!)";
 			}
 			System.err.println(message);
 			e.printStackTrace();
 
 			// when sending error notifications, let the notified people know from which 
-			// LAS/MobSOS installation the message came...
+			// MobSOS installation the message came...
 			java.net.InetAddress localMachine;
 			String hostName = "localhost";
 			String hostAddress = "127.0.0.1";

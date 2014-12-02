@@ -9,17 +9,16 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Hashtable;
 
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.csv.*;
 import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.params.HttpMethodParams;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
@@ -28,7 +27,7 @@ import acis.dbis.rwth.mobsos.monitor.Monitor;
 import acis.dbis.rwth.mobsos.monitor.log.LogEntryPackage;
 
 public class NginxLogEntryPackage extends LogEntryPackage{
-	
+
 	private CSVRecord record;
 
 	private NginxRequestLogEntry request;
@@ -66,25 +65,54 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		request.setRequestLength(record.get(12));
 		request.setResponseLength(record.get(13));
 		request.setRequestTime(record.get(14));
-		request.setClientId(record.get(15));
-		
+
+
 		// extract OIDC access token from request, if available.
 		// depending on which auth flow is used, the token is transmitted 
 		// in a query parameter or in a HTTP Authorization header. Precedence
 		// is given to the auth header option.
-		
+
 		String tokenQuery = record.get(16);
 		String tokenHeader = record.get(17);
+
 		String token = null;
-		
-		
+
 		if(!tokenHeader.equals("-") && tokenHeader.startsWith("Bearer ")){
 			token = tokenHeader.replaceAll("Bearer ", "");
 		} else if(!tokenQuery.equals("-")){
 			token = tokenQuery;
 		}
+
+		manageIpGeo();
+
+		if(token != null){
+			try {
+				JSONObject userInfo = retrieveUserInfo(token);
+				request.setUserId((String) userInfo.get("sub"));
+			} catch (IOException e) {
+				Monitor.log.warn("Could not retrieve OpenID Connect user info!",e);
+			}
+			try {
+				JSONObject clientInfo = retrieveClientInfo(token);
+
+			} catch (IOException e) {
+				Monitor.log.warn("Could not retrieve OpenID Connect client info!",e);
+			} catch (SQLException e) {
+				Monitor.log.warn("Could not retrieve OpenID Connect client info!",e);
+			}
+		}
+
 		
-		request.setToken(token);
+
+		// parse header parameters and put into hashtable
+		String headers = record.get(18);
+		Hashtable<String,String> htable = parseHeaders(headers);
+		this.headers.setHeaders(htable);
+		
+		// parse query parameters and put into hashtable
+		String queryParams = record.get(19);
+		Hashtable<String,String> qtable = parseQueryParams(queryParams);
+		this.query.setQueryParams(qtable);
 
 		/*
 		Monitor.log.info("Request Time: " + request.getTime());
@@ -102,40 +130,56 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		Monitor.log.info("Request Length: " + request.getRequestLength());
 		Monitor.log.info("Response Length: " + request.getResponseLength());
 		Monitor.log.info("Request Processing Time: " + request.getRequestTime());
+		Monitor.log.info("OpenID Connect User ID: " + request.getUserId());
+		Monitor.log.info("OpenID Connect Client ID: " + request.getClientId());
 		*/
 		
-		Monitor.log.info("OpenID Connect Client ID: " + request.getClientId());
-		Monitor.log.info("OpenID Connect Token: " + request.getToken());
-		
-		
-		
-		// parse query parameters and put into hashtable
-		// TODO:
-		manageIpGeo();
-		if(request.getToken() != null){
-			retrieveUserInfo(request.getToken());
+	}
+
+	private Hashtable<String,String> parseHeaders(String h){
+		Hashtable<String,String> result = new Hashtable<String,String>();
+
+		String[] htokens = h.split("\\\\x0D\\\\x0A");
+		for(String t: htokens){
+			if(t.indexOf(":")>=0){
+				String key = t.substring(0,t.indexOf(":")).trim();
+				String val = t.substring(t.indexOf(":")+1).trim();
+				result.put(key, val);
+			}
 		}
-		// parse header parameters and put into hashtable
-		// TODO:
+
+		return result;
 	}
-	
-	private void manageOidc(){
-		String uiep = (String) Monitor.oidcProviderConfig.get("userinfo_endpoint");
-		Monitor.log.debug("OIDC User Info Endpoint: " + uiep);
+
+	private Hashtable<String,String> parseQueryParams(String h){
+		Hashtable<String,String> result = new Hashtable<String,String>();
+
+		String[] htokens = h.split("&");
+
+		for(String t: htokens){
+			if(t.indexOf("=")>=0){
+				String[] keyval = t.split("=");
+				String key = keyval[0].trim();
+				String val = keyval[1].trim();
+				result.put(key, val);
+			}
+		}
+
+		return result;
 	}
-	
+
 	private void manageIpGeo(){
 		try {
 			PreparedStatement p = getWorker().getConnection().prepareStatement("select * from mobsos_logs.log_ipgeo where ip=?");
 			p.setString(1, request.getIp());
 			ResultSet rs = p.executeQuery();
-			
+
 			// only store, if ip geo data entry does not exist for given ip
 			if (!rs.isBeforeFirst()){
 				rs.close();
-				
+
 				CSVRecord record = retrieveIpGeo(request.getIp());
-				
+
 				String ipg = record.get(2);
 				String countryCode = record.get(3);
 				String countryName = record.get(4);
@@ -145,7 +189,7 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 				Float latitude = Float.parseFloat(record.get(8));
 				Float longitude = Float.parseFloat(record.get(9));
 				String timezone = record.get(10);
-				
+
 				PreparedStatement psave = getWorker().getConnection().prepareStatement("insert into mobsos_logs.log_ipgeo (ip, country_code, country_name, region_name, city_name, zip_code, lat, lon, timezone) values (?,?,?,?,?,?,?,?,?)");
 				psave.setString(1, ipg);
 				psave.setString(2, countryCode);
@@ -154,79 +198,128 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 				psave.setString(5, city);
 				psave.setString(6, code);
 				psave.setFloat(7, latitude);
-				psave.setFloat(8, latitude);
+				psave.setFloat(8, longitude);
 				psave.setString(9, timezone);
-				
+
 				int r = psave.executeUpdate();
-				
+
 				if(r<=0){
 					Monitor.log.warn("IP geo for ip " + ipg + " not written!");
 				}
 				psave.close();
+			} else {
+				rs.close();
 			}
-		
+
+
 		} catch (SQLException e) {
 			Monitor.log.warn("Could not retrieve/store IP geo data!",e);
 		} catch (IOException e) {
 			Monitor.log.warn("Could not retrieve/store IP geo data!",e);
 		}
 	}
-	
-	
 
-		
-	/**
-	 * Given an access token, retrieves Open ID Connect user information.
-	 * @throws ParseException 
-	 */
-	private void retrieveUserInfo(String token){
-		
-		// send Open ID Provider Config request
-		// (cf. http://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig)
-		String url = (String) Monitor.oidcProviderConfig.get("userinfo_endpoint");
-		
-		Monitor.log.debug("User Info Endpoint: " + url);
-		
+	private String retrieveClientId(String token) throws SQLException{
+
+		PreparedStatement p = getWorker().getConnection().prepareStatement("select c.client_id from openidconnect.access_token t join openidconnect.client_details c on (t.client_id = c.id) where t.token_value=?");
+		p.setString(1, request.getIp());
+		ResultSet rs = p.executeQuery();
+
+		String result = null;
+		while(rs.next()){
+			result = rs.getString(1);
+		}
+
+		rs.close();
+		p.close();
+		return result;
+
+	}
+
+	private JSONObject retrieveClientInfo(String token) throws IOException, SQLException{
+
+		String clientId = retrieveClientId(token);
+
+		// set client info request to MitreID API
+		// WARNING: NOT COMPLIANT WITH THE OPENID CONNECT STANDARD!
+		String url = (String) Monitor.oidcProviderConfig.get("issuer")+"api/clients";
+
 		// at this point we use a regular HttpURLConnection instead of the Apache Commons HTTP Client.
 		// The Apache client showed unexpected behavior, when confronted with a bearer token in an Authorization header.
 		// The respective request sent caused errors on server side attributed to invalid syntax.
-		try{
+
+
 		URL obj = new URL(url);
 		HttpURLConnection con = (HttpURLConnection) obj.openConnection();
- 
+
+		con.setRequestMethod("GET");
+		con.setRequestProperty("Authorization", "Bearer " + token);
+
+		BufferedReader in = new BufferedReader(
+				new InputStreamReader(con.getInputStream()));
+
+		JSONArray clients = (JSONArray) JSONValue.parse(in);
+		in.close();
+
+		if(Monitor.oidcClients == null || !Monitor.oidcClients.equals(clients)){
+			Monitor.log.debug("Retrieved Clients and Monitor Clients are different.");
+			Monitor.oidcClients = clients;
+		}
+
+		for(Object o: Monitor.oidcClients){
+			JSONObject client = (JSONObject) o;
+			if(client.get("clientId").toString().equals(clientId)){
+				Monitor.log.debug("Client Name: " + client.get("clientName"));
+				return client;
+			}
+		}
+
+		return null;
+
+	}
+
+	/**
+	 * Given an access token, retrieves Open ID Connect user information.
+	 * @throws IOException 
+	 * @throws Exception 
+	 * @throws ParseException 
+	 */
+	private JSONObject retrieveUserInfo(String token) throws IOException {
+
+		// send Open ID user info  request
+		String url = (String) Monitor.oidcProviderConfig.get("userinfo_endpoint");
+
+		// at this point we use a regular HttpURLConnection instead of the Apache Commons HTTP Client.
+		// The Apache client showed unexpected behavior, when confronted with a bearer token in an Authorization header.
+		// The respective request sent caused errors on server side attributed to invalid syntax.
+
+		URL obj = new URL(url);
+		HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+
 		// optional default is GET
 		con.setRequestMethod("GET");
- 
+
 		//add request header
 		con.setRequestProperty("Authorization", "Bearer " + token);
- 
-		int responseCode = con.getResponseCode();
- 
+
+		// parse response as JSON
 		BufferedReader in = new BufferedReader(
-		        new InputStreamReader(con.getInputStream()));
-		String inputLine;
-		StringBuffer response = new StringBuffer();
- 
-		while ((inputLine = in.readLine()) != null) {
-			response.append(inputLine);
-		}
+				new InputStreamReader(con.getInputStream()));
+
+		JSONObject userinfo = (JSONObject) JSONValue.parse(in);
+
 		in.close();
-		
-		Monitor.log.debug(response.toString());
-		// TODO: set request sub and make sure it's written to database.
-		// TODO: check api/client/{id} to retrieve additional info on client.
-		// TODO: set name to DatabaseWatcher thread.
-		
-		}catch(Exception e){
-			Monitor.log.debug("Erroe",e);
-		}
+
+		// return JSON user info
+		return userinfo;
+
 	}
 
 	private CSVRecord retrieveIpGeo(String ip) throws IOException{
-		
+
 		String apiKey = Monitor.conf.getProperty("ipinfodbKey");
 		String url = "http://api.ipinfodb.com/v3/ip-city/?key=" + apiKey + "&ip=" + ip;  
-		
+
 		// Create an instance of HttpClient.
 		HttpClient client = new HttpClient();
 
@@ -247,9 +340,9 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 
 			// Read the response body.
 			byte[] responseBody = method.getResponseBody();
-			
+
 			BufferedReader bin = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
-			
+
 			char delim = ";".charAt(0);
 			CSVRecord r = null;
 			for (CSVRecord record : CSVFormat.DEFAULT.withDelimiter(delim).parse(bin)) {
@@ -276,34 +369,36 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 
 		// first parse raw CSV data into ready-to-use POJOs (request, query, headers)
 		parseData();
+		persistData();
 
-		/*
+	}
+
+	private void persistData() throws SQLException{
 		if(this.request.isComplete()){
 
 			// get database connection via worker assigned to write this log entry package
 			Connection c = getWorker().getConnection();
 
 			// first write base request log
-			this.request.write();
+			this.request.write(c);
 
 			long rid = this.request.getId();
 
 			// then write request headers log
-
 			this.headers.setId(rid);
-			//this.requestHeadersLog.write();
-
+			this.headers.write(c);
+			
 			// then write request query parameters log
 			this.query.setId(rid);
-			//this.requestQueryLog.write();
+			this.query.write(c);
 
 			// finally commit whole transaction for log entry package, if everything went ok
 			c.commit();
 
-			Monitor.log.info("Log entry package " + this.getId() + " successfully written and committed");	
+			Monitor.log.info("Log entry package " + this.getId() + " successfully written and committed.");	
 
 		} else {
-			Monitor.log.warn("No attempt to write log entry package " + this.getId() + " due to incomplete request log entry.");
-		}*/
+			Monitor.log.info("Log entry package " + this.getId() + " dropped.");
+		}
 	}
 }

@@ -17,6 +17,7 @@ import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpMethodParams;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
@@ -35,6 +36,7 @@ public class Monitor {
 	// properties from file ./etc/conf.properties
 	public static Properties conf;
 	public static JSONObject oidcProviderConfig;
+	public static JSONArray oidcClients;
 
 	// logging framework
 	public final static Logger log = LoggerFactory.getLogger(Monitor.class );
