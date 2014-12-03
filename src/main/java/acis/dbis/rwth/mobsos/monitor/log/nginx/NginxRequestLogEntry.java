@@ -30,7 +30,7 @@ public class NginxRequestLogEntry extends LogEntry {
 	}
 
 	@Override
-	public boolean write(Connection c) {
+	public boolean write(Connection c) throws SQLException {
 		if(isComplete()){
 
 			PreparedStatement stmt = null;
@@ -74,12 +74,10 @@ public class NginxRequestLogEntry extends LogEntry {
 					this.setId(nid);
 					return true;
 				} else {
-					return false;
+					throw new SQLException("Could not write new request log entry!");
 				} 
 			} catch (SQLException e){
-				Monitor.log.debug("Could not write request log entry!",e);
-				Monitor.log.debug("Referer: " + referer);
-				return false;
+				throw e;
 			} finally {
 				try { if (rs != null) rs.close(); } catch(Exception e) {Monitor.log.warn("Could not close result set!",e);}
 				try { if (stmt != null) stmt.close(); } catch(Exception e) {Monitor.log.warn("Could not close result set!",e);}

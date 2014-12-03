@@ -134,6 +134,25 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		Monitor.log.info("OpenID Connect Client ID: " + request.getClientId());
 		*/
 		
+		// Measure length of String fields to optimize DB schema
+		Monitor.log.info("Request Time: " + request.getTime().length());
+		Monitor.log.info("Request IP: " + request.getIp().length());
+		Monitor.log.info("Request Scheme: " + request.getScheme().length());
+		Monitor.log.info("Request Host: " + request.getHost().length());
+		Monitor.log.info("Request Method: " + request.getMethod().length());
+		Monitor.log.info("Request URI: " + request.getUri().length());
+		Monitor.log.info("Status: " + request.getStatus());
+		Monitor.log.info("Referer: " + request.getReferer().length());
+		Monitor.log.info("Request User Agent: " + request.getUserAgent().length());
+		Monitor.log.info("Request Accept: " + request.getAccept().length());
+		Monitor.log.info("Received Content MIME: " + request.getReceivedContent().length());
+		Monitor.log.info("Served Content MIME: " + request.getSentContent().length());
+		Monitor.log.info("Request Length: " + request.getRequestLength().length());
+		Monitor.log.info("Response Length: " + request.getResponseLength().length());
+		Monitor.log.info("Request Processing Time: " + request.getRequestTime());
+		Monitor.log.info("OpenID Connect User ID: " + request.getUserId());
+		Monitor.log.info("OpenID Connect Client ID: " + request.getClientId());
+		
 	}
 
 	private Hashtable<String,String> parseHeaders(String h){

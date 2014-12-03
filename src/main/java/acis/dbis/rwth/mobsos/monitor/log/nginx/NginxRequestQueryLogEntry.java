@@ -28,22 +28,34 @@ public class NginxRequestQueryLogEntry extends LogEntry {
 
 	@Override
 	public boolean write(Connection c) throws SQLException {
-		if(isComplete()){
 
-			PreparedStatement stmt = c.prepareStatement("insert into mobsos_logs.log_query(id,name,value) values (?,?,?)");
+		PreparedStatement stmt = null;
 
-			for(String key: getQueryParams().keySet()){
-				stmt.setLong(1,getId());
-				stmt.setString(2,key);
-				stmt.setString(3, getQueryParams().get(key));
-				stmt.addBatch();
+		try{
+
+			if(isComplete()){
+
+				stmt = c.prepareStatement("insert into mobsos_logs.log_query(id,name,value) values (?,?,?)");
+
+				for(String key: getQueryParams().keySet()){
+					stmt.setLong(1,getId());
+					stmt.setString(2,key);
+					stmt.setString(3, getQueryParams().get(key));
+					stmt.addBatch();
+				}
+
+				stmt.executeBatch();
+
+				return true;
+			} else {
+				return false;
 			}
-			
-			stmt.executeBatch();
-			
-			return true;
-		} else {
-			return false;
+		}
+		catch(SQLException e){
+			throw e;
+		}
+		finally {
+			stmt.close();
 		}
 
 	}

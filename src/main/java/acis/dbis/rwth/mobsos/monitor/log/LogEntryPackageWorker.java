@@ -34,7 +34,7 @@ public class LogEntryPackageWorker extends Thread {
 	public LogEntryPackageWorker(LogEntryPackageManager m) throws SQLException {
 		this.setName("LEPW-"+(instance++));
 		this.manager = m;
-				
+
 		Monitor.log.info("Log Entry Package Worker " + getName() + " ready...");
 	}
 
@@ -46,7 +46,7 @@ public class LogEntryPackageWorker extends Thread {
 			// In this case, it can be disposed.
 			while (!manager.getConnection().isClosed()) {
 				LogEntryPackage l = null;
-				
+
 
 				synchronized ( manager.getQueue() ) {
 
@@ -56,7 +56,7 @@ public class LogEntryPackageWorker extends Thread {
 
 					// get the next complete log entry package from the queue 
 					l = manager.getQueue().remove();
-					
+
 					// have log entry package written by worker
 					if(l != null){
 						l.setWorker(this);
@@ -71,7 +71,7 @@ public class LogEntryPackageWorker extends Thread {
 			Thread.currentThread().interrupt();
 		}
 	}
-	
+
 	public Connection getConnection(){
 		return this.manager.getConnection();
 	}
@@ -121,9 +121,12 @@ public class LogEntryPackageWorker extends Thread {
 			message = "MobSOS Monitor on " + hostName + " (" + hostAddress + ") reports operation failure: " + message;
 			// attach deserialization of complete log entry package to message for easier debugging
 			message += l.toString();
-			
-			//System.out.println("Mail to be sent (reactivate notification manager!!): "+message);
-			NotificationManager.getInstance().notifyFailure(message, e);
+
+			if(NotificationManager.getInstance()!=null){
+				NotificationManager.getInstance().notifyFailure(message, e);
+			} else {
+				Monitor.log.error(message,e);
+			}
 
 		} finally {
 			l = null;

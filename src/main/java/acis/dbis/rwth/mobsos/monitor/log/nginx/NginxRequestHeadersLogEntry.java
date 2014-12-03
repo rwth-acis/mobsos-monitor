@@ -5,7 +5,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Hashtable;
 
-import acis.dbis.rwth.mobsos.monitor.Monitor;
 import acis.dbis.rwth.mobsos.monitor.log.LogEntry;
 import acis.dbis.rwth.mobsos.monitor.log.LogEntryPackage;
 
@@ -13,7 +12,7 @@ public class NginxRequestHeadersLogEntry extends LogEntry {
 
 
 	private Hashtable<String,String> headers;
-	
+
 	public NginxRequestHeadersLogEntry(LogEntryPackage container) {
 		super(container);
 	}
@@ -30,25 +29,32 @@ public class NginxRequestHeadersLogEntry extends LogEntry {
 
 	@Override
 	public boolean write(Connection c) throws SQLException {
-		if(isComplete()){
+		PreparedStatement stmt = null;
 
-			PreparedStatement stmt = c.prepareStatement("insert into mobsos_logs.log_header(id,name,value) values (?,?,?)");
+		try{
+			if(isComplete()){
 
-			for(String key: getHeaders().keySet()){
-				stmt.clearParameters();
-				stmt.setLong(1,getId());
-				stmt.setString(2,key);
-				stmt.setString(3, getHeaders().get(key));
-				stmt.addBatch();
+				stmt = c.prepareStatement("insert into mobsos_logs.log_header(id,name,value) values (?,?,?)");
+
+				for(String key: getHeaders().keySet()){
+					stmt.clearParameters();
+					stmt.setLong(1,getId());
+					stmt.setString(2,key);
+					stmt.setString(3, getHeaders().get(key));
+					stmt.addBatch();
+				}
+
+				stmt.executeBatch();
+				return true;
+
+			} else {
+				return false;
 			}
-			
-			stmt.executeBatch();
-			
-			return true;
-		} else {
-			return false;
+		} catch(SQLException e){
+			throw e;
+		} finally {
+			stmt.close();
 		}
-
 	}
 
 	/**

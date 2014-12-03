@@ -32,7 +32,7 @@ create table log (
 create table log_header (
     id bigint not null,
     name varchar(64) not null,
-    value varchar(512) not null,
+    value varchar(256) not null,
     constraint log_header_pk primary key(id,name),
     constraint log_header_fk foreign key(id) references log(id)
 );
