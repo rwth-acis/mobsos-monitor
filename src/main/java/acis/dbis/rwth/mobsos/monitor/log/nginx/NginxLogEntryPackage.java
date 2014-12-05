@@ -104,19 +104,15 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 			} catch (IOException e) {
 				Monitor.log.warn("Could not retrieve OpenID Connect user info!",e);
 			}
+			
 			try {
-				JSONObject clientInfo = retrieveClientInfo(token);
+				String clientId = retrieveClientId(token);
+				request.setClientId(clientId);
 
-			} catch (IOException e) {
-				Monitor.log.warn("Could not retrieve OpenID Connect client info!",e);
 			} catch (SQLException e) {
-				Monitor.log.warn("Could not retrieve OpenID Connect client info!",e);
+				Monitor.log.warn("Could not retrieve OpenID Connect client ID!",e);
 			}
 		}
-
-
-
-
 
 		// parse query parameters and put into hashtable
 		String queryParams = record.get(19);
