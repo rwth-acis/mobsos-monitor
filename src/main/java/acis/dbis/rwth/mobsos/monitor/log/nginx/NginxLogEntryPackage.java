@@ -320,6 +320,7 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 
 		//add request header
 		con.setRequestProperty("Authorization", "Bearer " + token);
+		con.setRequestProperty("User-Agent", "mobsos-monitor");
 
 		// parse response as JSON
 		BufferedReader in = new BufferedReader(
@@ -393,6 +394,14 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 	}
 
 	private void persistData() throws SQLException{
+		
+		Monitor.log.debug("UserAgent: " + this.headers.getHeaders().get("User-Agent"));
+		// drop entry, if it comes from MobSOS Monitor itself
+		if(this.headers.getHeaders().get("User-Agent").equals("mobsos-monitor")){
+			Monitor.log.debug("Dropped, because UserAgent is " + this.headers.getHeaders().get("User-Agent"));
+			return;
+		}
+		
 		if(this.request.isComplete()){
 
 			// get database connection via worker assigned to write this log entry package

@@ -47,14 +47,14 @@ create table log_query (
 
 create table log_ipgeo (
   ip char(17) not null,
-  country_code char(5) not null,
-  country_name char(80) not null,
-  region_name char(80) not null,
-  city_name char(80) not null,
-  zip_code int(10) not null,
+  country_code varchar(5) not null,
+  country_name varchar(80) not null,
+  region_name varchar(80) not null,
+  city_name varchar(80) not null,
+  zip_code varchar(10) not null,
   lat float(8,5) not null,
   lon float(8,5) not null,
-  timezone char(10) not null,
+  timezone varchar(10) not null,
   primary key  (ip)
 )
 
