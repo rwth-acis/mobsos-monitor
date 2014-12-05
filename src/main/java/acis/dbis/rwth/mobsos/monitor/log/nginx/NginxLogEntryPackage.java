@@ -58,7 +58,12 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 			Monitor.log.debug("Dropped, because UserAgent is " + this.headers.getHeaders().get("User-Agent"));
 			return false;
 		}
-
+		
+		// drop entry if it is static content
+		// TODO: introduce configurable filter with regex
+		if(record.get(5).endsWith(".js") || record.get(5).endsWith(".css")){
+			return false;
+		}
 
 		// first for main request record
 		request.setTime(record.get(0));
