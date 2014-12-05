@@ -39,7 +39,7 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		this.record = data;
 	}
 
-	private void parseData(){
+	private boolean parseData(){
 
 		// init POJOs
 		request = new NginxRequestLogEntry(this);
@@ -47,6 +47,18 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		headers = new NginxRequestHeadersLogEntry(this);
 
 		// extract POJO data from CSV record
+
+		// first parse header parameters and put into hashtable
+		String headers = record.get(18);
+		Hashtable<String,String> htable = parseHeaders(headers);
+		this.headers.setHeaders(htable);
+		
+		// drop entry, if it comes from MobSOS Monitor itself
+		if(this.headers.getHeaders().get("User-Agent").equals("mobsos-monitor")){
+			Monitor.log.debug("Dropped, because UserAgent is " + this.headers.getHeaders().get("User-Agent"));
+			return false;
+		}
+
 
 		// first for main request record
 		request.setTime(record.get(0));
@@ -102,13 +114,10 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 			}
 		}
 
-		
 
-		// parse header parameters and put into hashtable
-		String headers = record.get(18);
-		Hashtable<String,String> htable = parseHeaders(headers);
-		this.headers.setHeaders(htable);
-		
+
+
+
 		// parse query parameters and put into hashtable
 		String queryParams = record.get(19);
 		Hashtable<String,String> qtable = parseQueryParams(queryParams);
@@ -132,8 +141,8 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		Monitor.log.info("Request Processing Time: " + request.getRequestTime());
 		Monitor.log.info("OpenID Connect User ID: " + request.getUserId());
 		Monitor.log.info("OpenID Connect Client ID: " + request.getClientId());
-		*/
-		
+		 */
+
 		// Measure length of String fields to optimize DB schema
 		Monitor.log.info("Request Time: " + request.getTime().length());
 		Monitor.log.info("Request IP: " + request.getIp().length());
@@ -152,7 +161,7 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		Monitor.log.info("Request Processing Time: " + request.getRequestTime());
 		Monitor.log.info("OpenID Connect User ID: " + request.getUserId());
 		Monitor.log.info("OpenID Connect Client ID: " + request.getClientId());
-		
+		return true;
 	}
 
 	private Hashtable<String,String> parseHeaders(String h){
@@ -388,20 +397,18 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		// If an error occurs for writing one log entry, we roll back to guarantee consistency and completeness among log entries. 
 
 		// first parse raw CSV data into ready-to-use POJOs (request, query, headers)
-		parseData();
-		persistData();
+		// then check if user agent is MobSOS Monitor itself. If so, parseData returns false.
+		// in this case drop log entry.
+		if(parseData()){
+			persistData();
+		}
 
 	}
 
 	private void persistData() throws SQLException{
-		
+
 		Monitor.log.debug("UserAgent: " + this.headers.getHeaders().get("User-Agent"));
-		// drop entry, if it comes from MobSOS Monitor itself
-		if(this.headers.getHeaders().get("User-Agent").equals("mobsos-monitor")){
-			Monitor.log.debug("Dropped, because UserAgent is " + this.headers.getHeaders().get("User-Agent"));
-			return;
-		}
-		
+
 		if(this.request.isComplete()){
 
 			// get database connection via worker assigned to write this log entry package
@@ -415,7 +422,7 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 			// then write request headers log
 			this.headers.setId(rid);
 			this.headers.write(c);
-			
+
 			// then write request query parameters log
 			this.query.setId(rid);
 			this.query.write(c);
