@@ -246,7 +246,7 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 	private String retrieveClientId(String token) throws SQLException{
 
 		PreparedStatement p = getWorker().getConnection().prepareStatement("select c.client_id from OpenIDConnect.access_token t join OpenIDConnect.client_details c on (t.client_id = c.id) where t.token_value=?");
-		p.setString(1, request.getIp());
+		p.setString(1, token);
 		ResultSet rs = p.executeQuery();
 
 		String result = null;
