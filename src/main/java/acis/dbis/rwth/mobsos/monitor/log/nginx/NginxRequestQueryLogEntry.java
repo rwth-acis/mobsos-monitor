@@ -55,7 +55,7 @@ public class NginxRequestQueryLogEntry extends LogEntry {
 			throw e;
 		}
 		finally {
-			stmt.close();
+			if(stmt != null) stmt.close();
 		}
 
 	}

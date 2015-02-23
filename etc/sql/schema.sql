@@ -32,7 +32,7 @@ create table log (
 create table log_header (
     id bigint not null,
     name varchar(64) not null,
-    value varchar(256) not null,
+    value varchar(512) not null,
     constraint log_header_pk primary key(id,name),
     constraint log_header_fk foreign key(id) references log(id)
 );
@@ -47,14 +47,14 @@ create table log_query (
 
 create table log_ipgeo (
   ip char(17) not null,
-  country_code char(5) not null,
-  country_name char(80) not null,
-  region_name char(80) not null,
-  city_name char(80) not null,
-  zip_code int(10) not null,
+  country_code varchar(5) not null,
+  country_name varchar(80) not null,
+  region_name varchar(80) not null,
+  city_name varchar(80) not null,
+  zip_code varchar(10) not null,
   lat float(8,5) not null,
   lon float(8,5) not null,
-  timezone char(10) not null,
+  timezone varchar(10) not null,
   primary key  (ip)
 )
 
