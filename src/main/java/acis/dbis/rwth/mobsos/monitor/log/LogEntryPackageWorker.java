@@ -4,7 +4,6 @@ import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Hashtable;
 
 import acis.dbis.rwth.mobsos.monitor.Monitor;
 import acis.dbis.rwth.mobsos.monitor.notify.NotificationManager;
@@ -30,14 +29,13 @@ public class LogEntryPackageWorker extends Thread {
 	private final LogEntryPackageManager manager;
 	private static int instance = 0;
 
-
 	public LogEntryPackageWorker(LogEntryPackageManager m) throws SQLException {
 		this.setName("LEPW-"+(instance++));
 		this.manager = m;
 
 		Monitor.log.info("Log Entry Package Worker " + getName() + " ready...");
 	}
-
+	
 	@Override
 	public void run() {
 		try {
@@ -74,6 +72,10 @@ public class LogEntryPackageWorker extends Thread {
 
 	public Connection getConnection(){
 		return this.manager.getConnection();
+	}
+	
+	public LogEntryPackageManager getManager() {
+		return manager;
 	}
 
 	private void writeLogEntryPackage(LogEntryPackage l){

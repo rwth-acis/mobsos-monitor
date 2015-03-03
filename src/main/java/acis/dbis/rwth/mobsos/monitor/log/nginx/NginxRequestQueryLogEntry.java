@@ -34,8 +34,8 @@ public class NginxRequestQueryLogEntry extends LogEntry {
 		try{
 
 			if(isComplete()){
-
-				stmt = c.prepareStatement("insert into mobsos_logs.log_query(id,name,value) values (?,?,?)");
+				String dbname = this.getContainer().getWorker().getManager().getDatabaseName();
+				stmt = c.prepareStatement("insert into " + dbname + ".log_query(id,name,value) values (?,?,?)");
 
 				for(String key: getQueryParams().keySet()){
 					stmt.setLong(1,getId());

@@ -36,9 +36,9 @@ public class NginxRequestLogEntry extends LogEntry {
 			PreparedStatement stmt = null;
 			ResultSet rs = null;
 			try{
-
+				String dbname = this.getContainer().getWorker().getManager().getDatabaseName();
 				//time, ip, scheme, host, method, uri, status, referer, userAgent, accept, content_type, requestLength, responseLength, requestTime;
-				stmt = c.prepareStatement("insert into mobsos_logs.log(time,ip,user_id, client_id,scheme,host,method,uri,status,referer,useragent,accept,received_content,sent_content,request_length,response_length,request_time) "
+				stmt = c.prepareStatement("insert into " + dbname + ".log(time,ip,user_id, client_id,scheme,host,method,uri,status,referer,useragent,accept,received_content,sent_content,request_length,response_length,request_time) "
 						+ "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
 
 				if(uri.endsWith("/")){

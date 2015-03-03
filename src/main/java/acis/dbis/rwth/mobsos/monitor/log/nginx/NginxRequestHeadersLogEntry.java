@@ -33,8 +33,8 @@ public class NginxRequestHeadersLogEntry extends LogEntry {
 
 		try{
 			if(isComplete()){
-
-				stmt = c.prepareStatement("insert into mobsos_logs.log_header(id,name,value) values (?,?,?)");
+				String dbname = this.getContainer().getWorker().getManager().getDatabaseName();
+				stmt = c.prepareStatement("insert into " + dbname +".log_header(id,name,value) values (?,?,?)");
 
 				for(String key: getHeaders().keySet()){
 					stmt.clearParameters();

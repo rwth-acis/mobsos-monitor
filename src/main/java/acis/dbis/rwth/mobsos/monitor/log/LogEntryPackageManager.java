@@ -45,6 +45,7 @@ public class LogEntryPackageManager {
 
 	private String databaseDriverClassName;
 	private String databaseUrl;
+	private String databaseName;
 	private String databaseLogin;
 	private String databasePass;
 	private DatabaseWatcher databaseWatcher;
@@ -57,6 +58,8 @@ public class LogEntryPackageManager {
 	private Queue<LogEntryPackage> queue;
 	private Collection<LogEntryPackageWorker> workerPool;
 
+	
+
 	public LogEntryPackageManager(String jdbcDriverClassName, 
 			String jdbcUrl,
 			String jdbcLogin, String jdbcPass,
@@ -64,6 +67,8 @@ public class LogEntryPackageManager {
 
 		this.databaseDriverClassName = jdbcDriverClassName;
 		this.databaseUrl = jdbcUrl;
+		
+		this.setDatabaseName(this.databaseUrl.substring(this.databaseUrl.lastIndexOf("/")+1).trim());
 		
 		this.databaseLogin = jdbcLogin;
 		this.databasePass = jdbcPass;
@@ -88,6 +93,20 @@ public class LogEntryPackageManager {
 		Monitor.log.info("Database connection keep-alive ping active with " + this.dbKeepAlivePingInterval + "s interval.");
 		Monitor.log.info("Log entry package manager initialization complete.");
 
+	}
+
+	/**
+	 * @return the databaseName
+	 */
+	public String getDatabaseName() {
+		return databaseName;
+	}
+
+	/**
+	 * @param databaseName the databaseName to set
+	 */
+	public void setDatabaseName(String databaseName) {
+		this.databaseName = databaseName;
 	}
 
 	/**

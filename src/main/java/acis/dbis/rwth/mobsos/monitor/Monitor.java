@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URL;
 import java.sql.SQLException;
 import java.util.Properties;
 
@@ -30,7 +29,7 @@ import acis.dbis.rwth.mobsos.monitor.notify.NotificationManager;
 
 public class Monitor {
 
-	// stream of incoming data (usually `tail -f access.log` in stand-alone mode)
+	// stream of incoming data (usually `tail -n0 -f access.log` in stand-alone mode)
 	private InputStream in;
 
 	// properties from file ./etc/conf.properties
@@ -108,10 +107,6 @@ public class Monitor {
 			String responseBody = new String(method.getResponseBody());
 			
 			Monitor.oidcProviderConfig = (JSONObject) JSONValue.parseWithException(responseBody.toString());
-			
-			//Monitor.log.debug("OIDC Discovery Endpoint response parsed JSON:");
-			//Monitor.log.debug(this.oidcProviderConfig.toJSONString());
-			
 
 		} catch (HttpException e) {
 			Monitor.log.error("Could not retrieve OpenID Connect provider config!",e);

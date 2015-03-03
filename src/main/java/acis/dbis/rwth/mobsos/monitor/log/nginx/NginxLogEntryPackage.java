@@ -119,32 +119,31 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 			}
 		}
 
-		// parse query parameters and put into hashtable
+		// parse query parameters and put into hash table
 		String queryParams = record.get(19);
 		Hashtable<String,String> qtable = parseQueryParams(queryParams);
 		this.query.setQueryParams(qtable);
 
-		/*
-		Monitor.log.info("Request Time: " + request.getTime());
-		Monitor.log.info("Request IP: " + request.getIp());
-		Monitor.log.info("Request Scheme: " + request.getScheme());
-		Monitor.log.info("Request Host: " + request.getHost());
-		Monitor.log.info("Request Method: " + request.getMethod());
-		Monitor.log.info("Request URI: " + request.getUri());
-		Monitor.log.info("Status: " + request.getStatus());
-		Monitor.log.info("Referer: " + request.getReferer());
-		Monitor.log.info("Request User Agent: " + request.getUserAgent());
-		Monitor.log.info("Request Accept: " + request.getAccept());
-		Monitor.log.info("Received Content MIME: " + request.getReceivedContent());
-		Monitor.log.info("Served Content MIME: " + request.getSentContent());
-		Monitor.log.info("Request Length: " + request.getRequestLength());
-		Monitor.log.info("Response Length: " + request.getResponseLength());
-		Monitor.log.info("Request Processing Time: " + request.getRequestTime());
-		Monitor.log.info("OpenID Connect User ID: " + request.getUserId());
-		Monitor.log.info("OpenID Connect Client ID: " + request.getClientId());
-		 */
+		Monitor.log.debug("Request Time: " + request.getTime());
+		Monitor.log.debug("Request IP: " + request.getIp());
+		Monitor.log.debug("Request Scheme: " + request.getScheme());
+		Monitor.log.debug("Request Host: " + request.getHost());
+		Monitor.log.debug("Request Method: " + request.getMethod());
+		Monitor.log.debug("Request URI: " + request.getUri());
+		Monitor.log.debug("Status: " + request.getStatus());
+		Monitor.log.debug("Referer: " + request.getReferer());
+		Monitor.log.debug("Request User Agent: " + request.getUserAgent());
+		Monitor.log.debug("Request Accept: " + request.getAccept());
+		Monitor.log.debug("Received Content MIME: " + request.getReceivedContent());
+		Monitor.log.debug("Served Content MIME: " + request.getSentContent());
+		Monitor.log.debug("Request Length: " + request.getRequestLength());
+		Monitor.log.debug("Response Length: " + request.getResponseLength());
+		Monitor.log.debug("Request Processing Time: " + request.getRequestTime());
+		Monitor.log.debug("OpenID Connect User ID: " + request.getUserId());
+		Monitor.log.debug("OpenID Connect Client ID: " + request.getClientId());
 
 		// Measure length of String fields to optimize DB schema
+		/*
 		Monitor.log.info("Request Time: " + request.getTime().length());
 		Monitor.log.info("Request IP: " + request.getIp().length());
 		Monitor.log.info("Request Scheme: " + request.getScheme().length());
@@ -162,6 +161,7 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		Monitor.log.info("Request Processing Time: " + request.getRequestTime());
 		Monitor.log.info("OpenID Connect User ID: " + request.getUserId());
 		Monitor.log.info("OpenID Connect Client ID: " + request.getClientId());
+		*/
 		return true;
 	}
 
@@ -199,7 +199,8 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 
 	private void manageIpGeo(){
 		try {
-			PreparedStatement p = getWorker().getConnection().prepareStatement("select * from mobsos_logs.log_ipgeo where ip=?");
+			String dbname = this.getWorker().getManager().getDatabaseName();
+			PreparedStatement p = getWorker().getConnection().prepareStatement("select * from " + dbname + ".log_ipgeo where ip=?");
 			p.setString(1, request.getIp());
 			ResultSet rs = p.executeQuery();
 
@@ -219,7 +220,7 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 				Float longitude = Float.parseFloat(record.get(9));
 				String timezone = record.get(10);
 
-				PreparedStatement psave = getWorker().getConnection().prepareStatement("insert into mobsos_logs.log_ipgeo (ip, country_code, country_name, region_name, city_name, zip_code, lat, lon, timezone) values (?,?,?,?,?,?,?,?,?)");
+				PreparedStatement psave = getWorker().getConnection().prepareStatement("insert into " + dbname + ".log_ipgeo (ip, country_code, country_name, region_name, city_name, zip_code, lat, lon, timezone) values (?,?,?,?,?,?,?,?,?)");
 				psave.setString(1, ipg);
 				psave.setString(2, countryCode);
 				psave.setString(3, countryName);
