@@ -1,45 +1,45 @@
 MobSOS Monitor
 ==
 
-MobSOS Monitor serves as framework to process and persist access logs provided by a reverse proxy.
+MobSOS Monitor is a tool to collect, filter, enrich, and persist reverse proxy logs recording user interaction with hosted Web services. Authentication to Web services happens with OpenID Connect. Typical filter operations include dropping log entries not interesting for analysis (e.g. access to static content). Geolocation is a typical enrichment operation. Persistence is achieved by storing log data in a relational database.
 
-The following figure depicts the conceptual setup.
+## Build 
 
-```
-\ client \<------>\ reverse-proxy \
-                    \ tail -n0 -f logs/access.log \------>\ mobsos-monitor 
-                                                        \------>\ mobsos-db \
-                                                        \------>\ mobsos-trigger \
-```
-
-A client accesses Web services through a reverse proxy over HTTP. The reverse proxy usually produces logs. These logs are then piped directly into MobSOS Monitor, which in turn filters, enriches, and finally persists log data for further analysis. Typical filter operations include dropping log entries not interesting for analysis (e.g. access to static content). Typical enrichment operations include retrieval of geolocation data for logged IP addresses. 
-
-## Build Instructions
+MobSOS Monitor ships with an Apache Ant build file. 
+Simply type `ant` on the command line to build.
 
 ```
-ant all
+ant
 ```
-
-TODO: more detailed build instructions
 
 ## Configuration
 
-## Reverse Proxy Log Format
+### Reverse Proxy Log Format & Database Configuration
 
-The expected log format is a CSV format consisting of the typical fields available from HTTP logs. Below you find a sample log directive as used in nginx. 
+The MobSOS Monitor reference implementation assumes the use of openresty (http://openresty.org/) as reverse proxy and MySQL (http://mysql.com) as relational database management system. We provide both nginx log directive and relational database schema for this reference setup.
+
+1) Replace the `log_format` directive your openresty `nginx.conf` by the one in `./etc/openresty-log-directive.md`.
+2) Change credentials in `./etc/sql/schema.sql`.
+3) Create a database for MobSOS Monitor, e.g. using the following command line:
 
 ```
-log_format main '"$time_iso8601","$remote_addr","$host","$request_method","$uri","$status","$http_referer","$http_user_agent","$request_length","$bytes_sent","$request_time","$args",';
+mysql -u... -p... -h... < schema.sql
 ```
+
+### MobSOS Monitor Configuration
+
+MobSOS Monitor ships with one central configuration file `./etc/conf.properties`. In this file, you can configure database access, OpenID Connect provider, geolocation enrichment and failure mail notification. For geolocation enrichment, MobSOS Monitor uses the free geolocation [IPInfoDB Geolocation JSON API](http://www.ipinfodb.com/ip_location_api_json.php), requiring the registration of an API key. Failure mail notification is optional and requires a mail server accessible to MobSOS Monitor.
+
+1) Configure database access with the fields `jdbcUrl`, `jdbcLogin`, and `jdbcPass`.
+2) Configure OpenID Connect Provider with field `oidcProviderUrl`.
+3) Configure geolocation enrichment by setting IPInfoDB API key to field `ipinfodbKey`.
+4) Optionally, configure settings for the failure notification mailer with fields `mail*`.
 
 ## Run
 
+Simply start MobSOS Monitor by passing the path to the reverse proxy's log file to one of the available start scripts.
+MobSOS Monitor ships with start scripts for Windows (`./bin/start.bat`) and Linux (`./bin/start.sh`).
+
 ```
-./bin/start.sh <log-file>
+./bin/start.sh <log-file> (e.g. /usr/local/openresty/nginx/logs/access.log)
 ```
-
-## Reference Setup
-
-TODO: describe reference setup with nginx as reverse proxy.
-
-
