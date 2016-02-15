@@ -54,8 +54,9 @@ public class Monitor {
 		// initialize OpenID Connect interation
 		
 		initOidcProviderConfig();
+		
 		// initialize notification manager (for some reasons takes over a minute to init...)
-				//initNotificationManager();
+		//initNotificationManager();
 		
 	}
 	
@@ -169,14 +170,23 @@ public class Monitor {
 	public void listen() throws IOException{
 		BufferedReader bin = new BufferedReader(new InputStreamReader(in));
 		
+		String uri = "";
 		
 		for (CSVRecord record : CSVFormat.DEFAULT.parse(bin)) {
 			
-			NginxLogEntryPackage lp = new NginxLogEntryPackage(record);
+			// drop entry if it is static content
 			
-			LogEntryPackageManager.getInstance().addLogEntryPackage(lp);
-			LogEntryPackageManager.getInstance().queueLogEntryPackage(lp.getId());
-			
+			// TODO: introduce configurable filter with regex
+			uri = record.get(5);
+			if(!(uri.endsWith(".js") || 
+					uri.endsWith(".css"))){
+				NginxLogEntryPackage lp = new NginxLogEntryPackage(record);
+				LogEntryPackageManager.getInstance().addLogEntryPackage(lp);
+				LogEntryPackageManager.getInstance().queueLogEntryPackage(lp.getId());
+			}
+			else{
+				Monitor.log.info("dropped request for static content: " + uri);
+			}
 		}
 	}
 

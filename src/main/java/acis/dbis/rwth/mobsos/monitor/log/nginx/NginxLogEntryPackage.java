@@ -3,8 +3,11 @@ package acis.dbis.rwth.mobsos.monitor.log.nginx;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -25,6 +28,7 @@ import org.json.simple.parser.ParseException;
 
 import acis.dbis.rwth.mobsos.monitor.Monitor;
 import acis.dbis.rwth.mobsos.monitor.log.LogEntryPackage;
+import sun.security.provider.MD5;
 
 public class NginxLogEntryPackage extends LogEntryPackage{
 
@@ -52,13 +56,13 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		String headers = record.get(18);
 		Hashtable<String,String> htable = parseHeaders(headers);
 		this.headers.setHeaders(htable);
-		
+
 		// drop entry, if it comes from MobSOS Monitor itself
-		if(this.headers.getHeaders().get("User-Agent").equals("mobsos-monitor")){
+		if("mobsos-monitor".equals(this.headers.getHeaders().get("User-Agent"))) {
 			Monitor.log.debug("Dropped, because UserAgent is " + this.headers.getHeaders().get("User-Agent"));
 			return false;
 		}
-		
+
 		// drop entry if it is static content
 		// TODO: introduce configurable filter with regex
 		if(record.get(5).endsWith(".js") || record.get(5).endsWith(".css")){
@@ -103,19 +107,32 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		manageIpGeo();
 
 		if(token != null){
+			
+			// in live mode, user info should directly be fetched from the specified OIDC userinfo endpoint.
+			// currently, the code is in repair mode. Maybe introduce a commandline parameter for switching modes?
+			/*
 			try {
 				JSONObject userInfo = retrieveUserInfo(token);
 				request.setUserId((String) userInfo.get("sub"));
 			} catch (IOException e) {
-				Monitor.log.warn("Could not retrieve OpenID Connect user info!",e);
+				Monitor.log.warn("Could not retrieve OpenID Connect user info for token " + token,e);
 			}
-			
+			 */
+
+			try {
+				String userId = retrieveUserId(token);
+				request.setUserId(userId);
+
+			} catch (SQLException e) {
+				Monitor.log.warn("Could not retrieve user id!",e);
+			}
+
 			try {
 				String clientId = retrieveClientId(token);
 				request.setClientId(clientId);
 
 			} catch (SQLException e) {
-				Monitor.log.warn("Could not retrieve OpenID Connect client ID!",e);
+				Monitor.log.warn("Could not retrieve client ID!",e);
 			}
 		}
 
@@ -161,7 +178,7 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		Monitor.log.info("Request Processing Time: " + request.getRequestTime());
 		Monitor.log.info("OpenID Connect User ID: " + request.getUserId());
 		Monitor.log.info("OpenID Connect Client ID: " + request.getClientId());
-		*/
+		 */
 		return true;
 	}
 
@@ -186,11 +203,18 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		String[] htokens = h.split("&");
 
 		for(String t: htokens){
-			if(t.indexOf("=")>=0){
-				String[] keyval = t.split("=");
-				String key = keyval[0].trim();
-				String val = keyval[1].trim();
-				result.put(key, val);
+			try{
+				if(t.indexOf("=")>=0){
+					String[] keyval = t.split("=");
+					String key = keyval[0].trim();
+					String val = "";
+					if(keyval.length == 2){
+						val = keyval[1].trim();
+					}
+					result.put(key, val);
+				}
+			} catch (Exception e){
+				System.out.println("Query Params: " + h);
 			}
 		}
 
@@ -266,6 +290,41 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 
 	}
 
+	private String retrieveUserId(String token) throws SQLException{
+
+		// the SQL query driving this method relies upon a table mobsos_logs.auth_holder.
+		// this table is artificially created (not during runtime!) with the script ./bin/auth-hold-ext.sh
+		// this method is only for data set repairs!!! Should not be used in regular server operation!!!
+		PreparedStatement p = getWorker().getConnection().prepareStatement("select a.name from OpenIDConnect.access_token t join mobsos_logs.auth_holder a on (t.auth_holder_id = a.id) where t.token_value=?");
+		p.setString(1, token);
+		ResultSet rs = p.executeQuery();
+
+		String result = null;
+		while(rs.next()){
+			result = rs.getString(1);
+		}
+
+		rs.close();
+		p.close();
+
+		if(result == null){
+			try {
+				MessageDigest m = MessageDigest.getInstance("MD5");
+				m.reset();
+				m.update(token.getBytes());
+				byte[] digest = m.digest();
+				BigInteger bigInt = new BigInteger(1,digest);
+				result = bigInt.toString(16);
+
+			} catch (NoSuchAlgorithmException e) {
+				e.printStackTrace();
+			}
+		}
+
+		return result;
+
+	}
+
 	private JSONObject retrieveClientInfo(String token) throws IOException, SQLException{
 
 		String clientId = retrieveClientId(token);
@@ -277,8 +336,6 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		// at this point we use a regular HttpURLConnection instead of the Apache Commons HTTP Client.
 		// The Apache client showed unexpected behavior, when confronted with a bearer token in an Authorization header.
 		// The respective request sent caused errors on server side attributed to invalid syntax.
-
-
 		URL obj = new URL(url);
 		HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
@@ -432,7 +489,7 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 			// finally commit whole transaction for log entry package, if everything went ok
 			c.commit();
 
-			Monitor.log.info("Log entry package " + this.getId() + " successfully written and committed.");	
+			//Monitor.log.info("Log entry package " + this.getId() + " successfully written and committed.");	
 
 		} else {
 			Monitor.log.info("Log entry package " + this.getId() + " dropped.");

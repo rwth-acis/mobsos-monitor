@@ -16,13 +16,13 @@ create table log (
 	scheme varchar(5) not null,
 	host varchar(64) not null,
 	method varchar(8) not null,
-    uri varchar(256) not null,
-    status smallint not null,
-    referer varchar(512),
-	useragent varchar(128),
+  uri varchar(1024) not null,
+  status smallint not null,
+  referer text,
+	useragent varchar(256),
 	accept varchar(128),
-	received_content varchar(64),
-	sent_content varchar(64),
+	received_content varchar(128),
+	sent_content varchar(128),
 	request_length int not null,
 	response_length int not null,
 	request_time float not null,
@@ -32,7 +32,7 @@ create table log (
 create table log_header (
     id bigint not null,
     name varchar(64) not null,
-    value varchar(512) not null,
+    value text not null,
     constraint log_header_pk primary key(id,name),
     constraint log_header_fk foreign key(id) references log(id)
 );
@@ -40,7 +40,7 @@ create table log_header (
 create table log_query (
     id bigint not null,
     name varchar(64) not null,
-    value varchar(512) not null,
+    value text not null,
     constraint log_query_pk primary key(id,name),
     constraint log_query_fk foreign key(id) references log(id)
 );

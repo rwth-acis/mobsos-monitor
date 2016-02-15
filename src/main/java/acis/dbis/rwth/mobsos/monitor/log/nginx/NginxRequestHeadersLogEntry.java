@@ -53,7 +53,8 @@ public class NginxRequestHeadersLogEntry extends LogEntry {
 		} catch(SQLException e){
 			throw e;
 		} finally {
-			stmt.close();
+			if(stmt!=null)
+				stmt.close();
 		}
 	}
 
