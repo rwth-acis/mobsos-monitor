@@ -43,3 +43,4 @@ MobSOS Monitor ships with start scripts for Windows (`./bin/start.bat`) and Linu
 ```
 ./bin/start.sh <log-file> (e.g. /usr/local/openresty/nginx/logs/access.log)
 ```
+

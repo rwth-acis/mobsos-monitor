@@ -275,7 +275,7 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 
 	private String retrieveClientId(String token) throws SQLException{
 
-		PreparedStatement p = getWorker().getConnection().prepareStatement("select c.client_id from OpenIDConnect.access_token t join OpenIDConnect.client_details c on (t.client_id = c.id) where t.token_value=?");
+		PreparedStatement p = getWorker().getConnection().prepareStatement("select c.client_id from mobsos_logs.merged_access_token t join OpenIDConnect.client_details c on (t.client_id = c.id) where t.token_value=?");
 		p.setString(1, token);
 		ResultSet rs = p.executeQuery();
 
@@ -295,7 +295,7 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		// the SQL query driving this method relies upon a table mobsos_logs.auth_holder.
 		// this table is artificially created (not during runtime!) with the script ./bin/auth-hold-ext.sh
 		// this method is only for data set repairs!!! Should not be used in regular server operation!!!
-		PreparedStatement p = getWorker().getConnection().prepareStatement("select a.name from OpenIDConnect.access_token t join mobsos_logs.auth_holder a on (t.auth_holder_id = a.id) where t.token_value=?");
+		PreparedStatement p = getWorker().getConnection().prepareStatement("select a.name from mobsos_logs.merged_access_token t join mobsos_logs.merged_authentication_holder a on (t.auth_holder_id = a.id) where t.token_value=?");
 		p.setString(1, token);
 		ResultSet rs = p.executeQuery();
 

@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # IMPORTANT: This script must be run as root. First enter environment with sudo -s!
-pass=bYLTCgtNgSk7EMcqzhSLx5FftcQpnmQV;
+
+echo "Enter mysql root password:"
+read pass;
 
 ID=`echo $1 | sed -e 's/-//g' | sed -e 's/^.*mysqlbackup//g' | sed -e 's/[0-9][0-9]\.tar\.xz$//g'`;
 
@@ -22,3 +24,4 @@ service mysql start;
 mysqldump -uroot -p$pass --databases OpenIDConnect > dump_${ID}.sql
 
 cat dump_${ID}.sql | sed -e "s/\`OpenIDConnect\`/\`OpenIDConnect_$ID\`/g" > oidc_${ID}.sql
+rm dump_${ID}.sql

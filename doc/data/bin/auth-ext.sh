@@ -1,8 +1,7 @@
 #!/bin/bash
 
-pass=bYLTCgtNgSk7EMcqzhSLx5FftcQpnmQV;
-
-declare -a arr=("20150617" "20150622" "20150629" "20150811" "20150813" "20150916" "20151015" "20151115" "20151215" "20160115" "20160212" "20160215");
+echo "Enter mysql root password:"
+read pass;
 
 echo "" > all_access_token.csv;
 echo "" > all_authentication_holder.csv;
@@ -40,13 +39,13 @@ do
 done
 
 # remove all duplicate lines from access tokens and authentication holders
-echo "id;token_value;client_id;auth_holder_id" > merged_access_token.csv;
-echo "name;id" > merged_authentication_holder.csv;
+echo "id;token_value;client_id;auth_holder_id" > final_access_token.csv;
+echo "name;id" > final_authentication_holder.csv;
 
-cat all_access_token.csv | sort | uniq >> merged_access_token.csv
-cat all_authentication_holder.csv | sort | uniq >> merged_authentication_holder.csv
+cat all_access_token.csv | sort | uniq >> final_access_token.csv
+cat all_authentication_holder.csv | sort | uniq >> final_authentication_holder.csv
 
-cat merged_access_token.csv | grep -v "^[[:space:]]*$" > final_access_token.csv
-cat merged_authentication_holder.csv | grep -v "^[[:space:]]*$" > final_authentication_holder.csv
+cat merged_access_token.csv | grep -v "^[[:space:]]*$" > merged_access_token.csv
+cat merged_authentication_holder.csv | grep -v "^[[:space:]]*$" > merged_authentication_holder.csv
 
-rm all_access_token.csv all_authentication_holder.csv merged_authentication_holder.csv merged_access_token.csv
+rm all_access_token.csv all_authentication_holder.csv final_authentication_holder.csv final_access_token.csv
