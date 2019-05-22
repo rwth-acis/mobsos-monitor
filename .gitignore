@@ -1,6 +1,6 @@
-etc
-export
-lib
-log
-tmp
+/etc
+/export
+/lib
+/log
+/tmp
 /output/
