@@ -17,8 +17,8 @@
     <property name="ivy.settings.file" value="${ivy.jar.dir}/ivysettings.xml" />
     <property name="ivy.dep.file" value="${ivy.jar.dir}/ivy.xml" />
 	
-	<property name="src.main" location="src/main/java" />
-	<property name="src.junit" location="src/test/java" />
+	<property name="src.main" location="src/main" />
+	<property name="src.junit" location="src/test" />
 	
 	<property name="tmp" location="tmp" />
 	
@@ -41,30 +41,44 @@
 		</fileset>
 	</path>
 	
-	<property name="lib.junit" location="${lib}/junit-4.11.jar:${lib}/hamcrest-core-1.3.jar" />
+	<property name="lib.junit" location="${lib}/junit-4.12.jar:${lib}/hamcrest-core-1.3.jar" />
 	
 	
-	<!-- Download Dependencies (IVY) -->
+	<!-- Ivy Installation (Tool to fetch Libraries) -->
+	    <property name="ivy.install.version" value="2.4.0" />
+	    <property name="ivy.jar.dir" value="${basedir}/etc/ivy" />
+	    <property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
+	    <property name="ivy.settings.file" value="${ivy.jar.dir}/ivysettings.xml" />
+	    <property name="ivy.dep.file" value="${ivy.jar.dir}/ivy.xml" />
+	    <!-- Download Ivy from Web Site so that it can be used without any special Installation -->
+	    <target name="download-ivy" unless="skip.download">
+	        <mkdir dir="${ivy.jar.dir}"/>
+	        <echo message="installing ivy..."/>
+	        <get src="http://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
+	            dest="${ivy.jar.file}" usetimestamp="true" skipexisting="true"/>
+	    </target>
+	    <!-- Try to load Ivy here from local Ivy directory -->
+	    <target name="install-ivy" depends="download-ivy">
+	        <path id="ivy.lib.path">
+	            <fileset dir="${ivy.jar.dir}" includes="*.jar"/>
+	        </path>
+	        <taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
+	    </target>
+	    
+	    
+	    <!-- Get Dependencies from our Maven Repository via Ivy -->
+	    <target name="get_deps" depends="install-ivy, init_deps" description="--> resolve dependencies">
+	        <ivy:settings>
+	            <credentials host="role.dbis.rwth-aachen.de:9911/archiva"  realm="Repository internal"/>
+	        </ivy:settings>
+	    	<ivy:retrieve type="jar, bundle" conf="platform" pattern="${lib}/[artifact]-[revision].[ext]"/>
+	    	<ivy:retrieve type="jar, bundle" conf="bundle" pattern="${lib}/[artifact]-[revision].[ext]"/>
+	    </target>
 	
-    <target name="download-ivy" unless="skip.download">
-        <echo message="installing ivy..."/>
-        <get src="http://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
-            dest="${ivy.jar.file}" usetimestamp="true"/>
-    </target>
-
-    <target name="install-ivy" depends="download-ivy" description="--> install ivy">
-        <path id="ivy.lib.path">
-            <fileset dir="${ivy.jar.dir}" includes="*.jar"/>
-        </path>
-        <taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
-    </target>
-
-    <target name="get_deps" depends="install-ivy" description="--> resolve dependencies">
-        <ivy:settings>
-            <credentials host="role.dbis.rwth-aachen.de:9911/archiva" realm="Repository internal"/>
-        </ivy:settings>
-        <ivy:retrieve type="jar"/>
-    </target>
+	 <!-- Initialization (Folder Creation)-->
+		<target name="init_deps">
+	        <mkdir dir="${lib}" />
+	    </target>
 	
 	<target name="deploy-snapshot" depends="jar" description="--> deploy as snapshot to archiva">
 		
