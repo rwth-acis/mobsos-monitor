@@ -77,6 +77,7 @@ public class NginxRequestLogEntry extends LogEntry {
 					throw new SQLException("Could not write new request log entry!");
 				} 
 			} catch (SQLException e){
+				e.printStackTrace();
 				throw e;
 			} finally {
 				try { if (rs != null) rs.close(); } catch(Exception e) {Monitor.log.warn("Could not close result set!",e);}

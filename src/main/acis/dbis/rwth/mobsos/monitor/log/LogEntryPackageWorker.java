@@ -83,7 +83,7 @@ public class LogEntryPackageWorker extends Thread {
 			l.write();
 		} 
 		catch (Exception e) {
-
+			e.printStackTrace();
 			// if any exception occurs while writing a complete log entry package, roll back
 			// complete transaction and send notification via mail.
 			boolean rbComplete = false;

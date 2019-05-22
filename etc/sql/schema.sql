@@ -2,10 +2,6 @@ drop schema if exists mobsos_logs;
 create schema if not exists mobsos_logs default character set utf8 collate utf8_general_ci;
 use mobsos_logs;
 
-grant usage on *.* to mobsos@localhost identified by 'mobsosrules'; 
-grant all privileges on mobsos_logs.* to mobsos@localhost;
-grant all on mobsos_logs.* to mobsos@localhost;
-grant select on openidconnect.* to mobsos@localhost;
 
 create table log (
     id bigint not null auto_increment,
@@ -54,7 +50,7 @@ create table log_ipgeo (
   zip_code varchar(10) not null,
   lat float(8,5) not null,
   lon float(8,5) not null,
-  timezone varchar(10) not null,
+  timezone varchar(30) not null,
   primary key  (ip)
 )
 

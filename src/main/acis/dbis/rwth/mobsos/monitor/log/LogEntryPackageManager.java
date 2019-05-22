@@ -67,8 +67,8 @@ public class LogEntryPackageManager {
 
 		this.databaseDriverClassName = jdbcDriverClassName;
 		this.databaseUrl = jdbcUrl;
-		
-		this.setDatabaseName(this.databaseUrl.substring(this.databaseUrl.lastIndexOf("/")+1).trim());
+		String[] dbname = this.databaseUrl.substring(this.databaseUrl.lastIndexOf("/")+1).trim().split("\\?");
+		this.setDatabaseName(dbname[0]);
 		
 		this.databaseLogin = jdbcLogin;
 		this.databasePass = jdbcPass;

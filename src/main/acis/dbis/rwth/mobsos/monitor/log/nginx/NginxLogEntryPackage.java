@@ -1,9 +1,11 @@
 package acis.dbis.rwth.mobsos.monitor.log.nginx;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -22,6 +24,10 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
+
+import com.maxmind.geoip2.DatabaseReader;
+import com.maxmind.geoip2.exception.GeoIp2Exception;
+import com.maxmind.geoip2.model.CityResponse;
 
 import acis.dbis.rwth.mobsos.monitor.Monitor;
 import acis.dbis.rwth.mobsos.monitor.log.LogEntryPackage;
@@ -54,7 +60,7 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		this.headers.setHeaders(htable);
 		
 		// drop entry, if it comes from MobSOS Monitor itself
-		if(this.headers.getHeaders().get("User-Agent").equals("mobsos-monitor")){
+		if(this.headers.getHeaders().get("user-agent").equals("mobsos-monitor")){
 			Monitor.log.debug("Dropped, because UserAgent is " + this.headers.getHeaders().get("User-Agent"));
 			return false;
 		}
@@ -168,7 +174,7 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 	private Hashtable<String,String> parseHeaders(String h){
 		Hashtable<String,String> result = new Hashtable<String,String>();
 
-		String[] htokens = h.split("\\\\x0D\\\\x0A");
+		String[] htokens = h.split("\\\\x0A");
 		for(String t: htokens){
 			if(t.indexOf(":")>=0){
 				String key = t.substring(0,t.indexOf(":")).trim();
@@ -203,23 +209,22 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 			PreparedStatement p = getWorker().getConnection().prepareStatement("select * from " + dbname + ".log_ipgeo where ip=?");
 			p.setString(1, request.getIp());
 			ResultSet rs = p.executeQuery();
-
+			System.out.println(request.getIp());
 			// only store, if ip geo data entry does not exist for given ip
 			if (!rs.isBeforeFirst()){
 				rs.close();
 
-				CSVRecord record = retrieveIpGeo(request.getIp());
-
-				String ipg = record.get(2);
-				String countryCode = record.get(3);
-				String countryName = record.get(4);
-				String region = record.get(5);
-				String city = record.get(6);
-				String code = record.get(7);
-				Float latitude = Float.parseFloat(record.get(8));
-				Float longitude = Float.parseFloat(record.get(9));
-				String timezone = record.get(10);
-
+				CityResponse record = retrieveIpGeo(request.getIp());
+				String ipg = request.getIp();
+				String countryCode = record.getCountry().getIsoCode();
+				String countryName = record.getCountry().getName();
+				String region = record.getLeastSpecificSubdivision().getName();
+				String city = record.getCity().getName();
+				String code = record.getPostal().getCode();
+				float latitude = (float) record.getLocation().getLatitude().doubleValue();
+				float longitude = (float)record.getLocation().getLongitude().doubleValue();
+				String timezone = record.getLocation().getTimeZone();
+				System.out.println(timezone);
 				PreparedStatement psave = getWorker().getConnection().prepareStatement("insert into " + dbname + ".log_ipgeo (ip, country_code, country_name, region_name, city_name, zip_code, lat, lon, timezone) values (?,?,?,?,?,?,?,?,?)");
 				psave.setString(1, ipg);
 				psave.setString(2, countryCode);
@@ -346,49 +351,22 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 
 	}
 
-	private CSVRecord retrieveIpGeo(String ip) throws IOException{
-
-		String apiKey = Monitor.conf.getProperty("ipinfodbKey");
-		String url = "http://api.ipinfodb.com/v3/ip-city/?key=" + apiKey + "&ip=" + ip;  
-
-		// Create an instance of HttpClient.
-		HttpClient client = new HttpClient();
-
-		// Create a method instance.
-		GetMethod method = new GetMethod(url);
-
-		// Provide custom retry handler is necessary
-		method.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, 
-				new DefaultHttpMethodRetryHandler(3, false));
-
+	private CityResponse retrieveIpGeo(String ip) throws IOException{
+	    String dbLocation = "etc/GeoLite2-City.mmdb";
+	         
+	    File database = new File(dbLocation);
+	    DatabaseReader dbReader = new DatabaseReader.Builder(database)
+	      .build();
+	    InetAddress ipAddress = InetAddress.getByName(ip);
+	    CityResponse response = null;
+	    
 		try {
-			// Execute the method.
-			int statusCode = client.executeMethod(method);
-
-			if (statusCode != HttpStatus.SC_OK) {
-				Monitor.log.warn("IP geo retrieval failed: " + method.getStatusLine());
-			}
-
-			// Read the response body.
-			byte[] responseBody = method.getResponseBody();
-
-			BufferedReader bin = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
-
-			char delim = ";".charAt(0);
-			CSVRecord r = null;
-			for (CSVRecord record : CSVFormat.DEFAULT.withDelimiter(delim).parse(bin)) {
-				r = record;
-			}
-			return r;
-
-		} catch (HttpException e) {
-			throw e;
-		} catch (IOException e) {
-			throw e;
-		} finally {
-			// Release the connection.
-			method.releaseConnection();
-		} 
+			response = dbReader.city(ipAddress);
+		} catch (GeoIp2Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return response;
 	}	
 
 
