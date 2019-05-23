@@ -11,12 +11,6 @@
 		<javac includeantruntime="false" />
 	</presetdef>
 	
-    <property name="ivy.install.version" value="2.3.0" />
-    <property name="ivy.jar.dir" value="${basedir}/etc/ivy" />
-    <property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
-    <property name="ivy.settings.file" value="${ivy.jar.dir}/ivysettings.xml" />
-    <property name="ivy.dep.file" value="${ivy.jar.dir}/ivy.xml" />
-	
 	<property name="src.main" location="src/main" />
 	<property name="src.junit" location="src/test" />
 	
@@ -41,7 +35,7 @@
 		</fileset>
 	</path>
 	
-	<property name="lib.junit" location="${lib}/junit-4.11.jar:${lib}/hamcrest-core-1.3.jar" />
+	<property name="lib.junit" location="${lib}/junit-4.12.jar:${lib}/hamcrest-core-1.3.jar" />
 	
 	
 	<!-- Ivy Installation (Tool to fetch Libraries) -->
@@ -68,6 +62,7 @@
 	    
 	    <!-- Get Dependencies from our Maven Repository via Ivy -->
 	    <target name="get_deps" depends="install-ivy, init_deps" description="--> resolve dependencies">
+	    	<ivy:cleancache />
 	        <ivy:settings>
 	            <credentials host="role.dbis.rwth-aachen.de:9911/archiva"  realm="Repository internal"/>
 	        </ivy:settings>
@@ -159,8 +154,8 @@
 		<javac srcdir="${src.main}"
             destdir="${tmp.classes}"
             classpathref="libraries"
-            source="1.7"
-            target="1.7"
+            source="1.8"
+            target="1.8"
             debug="on"
             encoding="UTF-8"
 		/>
@@ -176,8 +171,8 @@
             destdir="${tmp.junit}"
             classpath="${tmp.classes}:${lib.junit}"
             classpathref="libraries"
-            source="1.7"
-            target="1.7"
+            source="1.8"
+            target="1.8"
             debug="on"
             encoding="UTF-8"
 		/>
