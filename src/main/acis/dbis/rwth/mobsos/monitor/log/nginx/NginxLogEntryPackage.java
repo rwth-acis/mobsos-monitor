@@ -58,13 +58,13 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		String headers = record.get(18);
 		Hashtable<String,String> htable = parseHeaders(headers);
 		this.headers.setHeaders(htable);
-		
+
 		// drop entry, if it comes from MobSOS Monitor itself
 		if(this.headers.getHeaders().get("user-agent").equals("mobsos-monitor")){
 			Monitor.log.debug("Dropped, because UserAgent is " + this.headers.getHeaders().get("User-Agent"));
 			return false;
 		}
-		
+
 		// drop entry if it is static content
 		// TODO: introduce configurable filter with regex
 		if(record.get(5).endsWith(".js") || record.get(5).endsWith(".css")){
@@ -72,7 +72,7 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 		}
 
 		// first for main request record
-		request.setTime(record.get(0));
+		request.setTime(convertTimestamp(record.get(0)));
 		request.setIp(record.get(1));
 		request.setScheme(record.get(2));
 		request.setHost(record.get(3));
@@ -91,7 +91,7 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 
 
 		// extract OIDC access token from request, if available.
-		// depending on which auth flow is used, the token is transmitted 
+		// depending on which auth flow is used, the token is transmitted
 		// in a query parameter or in a HTTP Authorization header. Precedence
 		// is given to the auth header option.
 
@@ -115,7 +115,7 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 			} catch (IOException e) {
 				Monitor.log.warn("Could not retrieve OpenID Connect user info!",e);
 			}
-			
+
 			try {
 				String clientId = retrieveClientId(token);
 				request.setClientId(clientId);
@@ -315,9 +315,9 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 
 	/**
 	 * Given an access token, retrieves Open ID Connect user information.
-	 * @throws IOException 
-	 * @throws Exception 
-	 * @throws ParseException 
+	 * @throws IOException
+	 * @throws Exception
+	 * @throws ParseException
 	 */
 	private JSONObject retrieveUserInfo(String token) throws IOException {
 
@@ -353,13 +353,13 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 
 	private CityResponse retrieveIpGeo(String ip) throws IOException{
 	    String dbLocation = "etc/GeoLite2-City.mmdb";
-	         
+
 	    File database = new File(dbLocation);
 	    DatabaseReader dbReader = new DatabaseReader.Builder(database)
 	      .build();
 	    InetAddress ipAddress = InetAddress.getByName(ip);
 	    CityResponse response = null;
-	    
+
 		try {
 			response = dbReader.city(ipAddress);
 		} catch (GeoIp2Exception e) {
@@ -367,14 +367,14 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 			e.printStackTrace();
 		}
 		return response;
-	}	
+	}
 
 
 	public void write() throws SQLException{
 
 		// since we consider log entry packages as atomic units to write to the log database, we explicitly use transactions.
 		// A commit only takes place if all complete entries in a log entry package could be written successfully within a transaction.
-		// If an error occurs for writing one log entry, we roll back to guarantee consistency and completeness among log entries. 
+		// If an error occurs for writing one log entry, we roll back to guarantee consistency and completeness among log entries.
 
 		// first parse raw CSV data into ready-to-use POJOs (request, query, headers)
 		// then check if user agent is MobSOS Monitor itself. If so, parseData returns false.
@@ -410,10 +410,60 @@ public class NginxLogEntryPackage extends LogEntryPackage{
 			// finally commit whole transaction for log entry package, if everything went ok
 			c.commit();
 
-			Monitor.log.info("Log entry package " + this.getId() + " successfully written and committed.");	
+			Monitor.log.info("Log entry package " + this.getId() + " successfully written and committed.");
 
 		} else {
 			Monitor.log.info("Log entry package " + this.getId() + " dropped.");
 		}
+	}
+
+	private String convertTimestamp(String timestamp) {
+		String day = timestamp.substring(0,2);
+		String Month = timestamp.substring(3,6);
+		String year = timestamp.substring(7,11);
+		String time = timestamp.substring(12,20);
+		String month = "";
+		switch(Month) {
+			case "Jan":
+				month = "01";
+				break;
+			case "Feb":
+				month = "02";
+				break;
+			case "Mar":
+				month = "03";
+				break;
+			case "Apr":
+				month = "04";
+				break;
+			case "May":
+				month = "05";
+				break;
+			case "Jun":
+				month = "06";
+				break;
+			case "Jul":
+				month = "07";
+				break;
+			case "Aug":
+				month = "08";
+				break;
+			case "Sep":
+				month = "09";
+				break;
+			case "Oct":
+				month = "10";
+				break;
+			case "Nov":
+				month = "11";
+				break;
+			case "Dec":
+				month = "12";
+				break;
+			default:
+				month = "00";
+				break;
+		}
+		return year + "-" + month + "-" + day + "T" + time + "+01:00";
 	}
 }
